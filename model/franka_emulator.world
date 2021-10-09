@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="default">
+    <!-- A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <!-- A ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <model name="franka_model">
+      <include>
+        <uri>file:///mnt/E/Project/franka_emulator/model</uri>
+      </include>
+      <plugin name="franka_emulator_plugin" filename="libfranka_emulator_plugin.so"/>
+    </model>
+
+  </world>
+</sdf>
