@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-#include <franka/gripper_state.h>
+#include "gripper_state.h"
 
 /**
  * @file gripper.h
@@ -146,11 +146,6 @@ class Gripper {
   Gripper(const Gripper&) = delete;
   Gripper& operator=(const Gripper&) = delete;
   /// @endcond
-
- private:
-  std::unique_ptr<Network> network_;
-
-  uint16_t ri_version_;
 };
 
 }  // namespace franka

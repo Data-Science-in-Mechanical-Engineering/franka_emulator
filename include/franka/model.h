@@ -5,8 +5,8 @@
 #include <array>
 #include <memory>
 
-#include <franka/robot.h>
-#include <franka/robot_state.h>
+#include "robot.h"
+#include "robot_state.h"
 
 /**
  * @file model.h
@@ -274,10 +274,7 @@ class Model {
   /// @cond DO_NOT_DOCUMENT
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
-  /// @endcond
-
- private:
-  std::unique_ptr<ModelLibrary> library_;
+  /// @endcond  
 };
 
 }  // namespace franka

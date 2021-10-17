@@ -6,7 +6,7 @@
 #include <ostream>
 #include <string>
 
-#include <franka/duration.h>
+#include "duration.h"
 
 /**
  * @file vacuum_gripper_state.h

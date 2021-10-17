@@ -7,11 +7,12 @@
 #include <mutex>
 #include <string>
 
-#include <franka/command_types.h>
-#include <franka/control_types.h>
-#include <franka/duration.h>
-#include <franka/lowpass_filter.h>
-#include <franka/robot_state.h>
+#include "emulator/shared.h"
+#include "command_types.h"
+#include "control_types.h"
+#include "duration.h"
+#include "lowpass_filter.h"
+#include "robot_state.h"
 
 /**
  * @file robot.h
@@ -689,11 +690,14 @@ class Robot {
   Robot& operator=(const Robot&) = delete;
   /// @endcond
 
-  class Impl;
-
- private:
-  std::unique_ptr<Impl> impl_;
-  std::mutex control_mutex_;
+private:
+  typedef bool (Callback)(Robot*);
+  std::string _shared_name  = "";
+  int _shared_file          = -1;
+  emulator::Shared *_shared = nullptr;
+  void *_context            = nullptr;
+  Callback *_callback       = nullptr;
+  void _control();
 };
 
 }  // namespace franka

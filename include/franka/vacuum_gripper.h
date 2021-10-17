@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-#include <franka/vacuum_gripper_state.h>
+#include "vacuum_gripper_state.h"
 
 /**
  * @file vacuum_gripper.h
@@ -127,11 +127,6 @@ class VacuumGripper {
   VacuumGripper(const VacuumGripper&) = delete;
   VacuumGripper& operator=(const VacuumGripper&) = delete;
   /// @endcond
-
- private:
-  std::unique_ptr<Network> network_;
-
-  uint16_t ri_version_;
 };
 
 }  // namespace franka

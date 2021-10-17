@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-#include <franka/log.h>
+#include "log.h"
 
 /**
  * @file exception.h

@@ -4,8 +4,8 @@
 
 #include <vector>
 
-#include <franka/control_types.h>
-#include <franka/robot_state.h>
+#include "control_types.h"
+#include "robot_state.h"
 
 /**
  * @file log.h

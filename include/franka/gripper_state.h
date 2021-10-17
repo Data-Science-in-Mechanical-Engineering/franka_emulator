@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <ostream>
 
-#include <franka/duration.h>
+#include "duration.h"
 
 /**
  * @file gripper_state.h

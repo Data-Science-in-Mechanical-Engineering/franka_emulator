@@ -5,8 +5,8 @@
 #include <array>
 #include <ostream>
 
-#include <franka/duration.h>
-#include <franka/errors.h>
+#include "duration.h"
+#include "errors.h"
 
 /**
  * @file robot_state.h
