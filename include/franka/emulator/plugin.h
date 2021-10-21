@@ -10,6 +10,7 @@ namespace franka
         class Plugin : public gazebo::ModelPlugin
         {
         private:
+            static const size_t _nanosecond_timeout = 300 * 1000;
             std::string _shared_name    = "";
             int _shared_file            = -1;
             emulator::Shared *_shared   = nullptr;

@@ -12,7 +12,7 @@
 
     <model name="franka_model">
       <include>
-        <uri>file:///mnt/D/Project/franka_emulator/model</uri>
+        <uri>model://model</uri>
       </include>
       <plugin name="franka_plugin" filename="libfranka_plugin.so"/>
     </model>

@@ -6,6 +6,7 @@
 #include <sched.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <iostream> //DEBUG
 
 franka::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
 {
@@ -65,17 +66,21 @@ void franka::Robot::_control()
     if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw RealtimeException("franka_emulator::Robot::_control: pthread_attr_setschedpolicy failed");
     if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw RealtimeException("franka_emulator::Robot::_control: pthread_attr_setinheritsched failed");
     pthread_t real_time_thread;
+    std::cerr << *((size_t*)&_shared->plugin_to_robot_condition) << " " << *((size_t*)&_shared->plugin_to_robot_mutex) << std::endl;
     if (pthread_create(&real_time_thread, &pthread_attributes.data, [](void* uncasted_robot) -> void*
     {
         Robot *robot = (Robot*)uncasted_robot;
         while (true)
         {
+            std::cerr << "Waiting" << std::endl;
             pthread_mutex_lock(&robot->_shared->plugin_to_robot_mutex);
+            std::cerr << "Waiting" << std::endl;
             pthread_cond_wait(&robot->_shared->plugin_to_robot_condition, &robot->_shared->plugin_to_robot_mutex);
-            bool finished = (*robot->_callback)(robot);
             pthread_mutex_unlock(&robot->_shared->plugin_to_robot_mutex);
 
+            std::cerr << "Signaling" << std::endl;
             pthread_mutex_lock(&robot->_shared->robot_to_plugin_mutex);
+            bool finished = (*robot->_callback)(robot);
             pthread_cond_signal(&robot->_shared->robot_to_plugin_condition);
             pthread_mutex_unlock(&robot->_shared->robot_to_plugin_mutex);
 

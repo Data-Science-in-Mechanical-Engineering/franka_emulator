@@ -19,18 +19,6 @@ set(CMAKE_CXX_STANDARD 11)
 # gazebo
 find_package(gazebo REQUIRED)
 
-# pinocchio
-find_package(pinocchio)
-if (DEFINED pinocchio_FOUND)
-	set(pinocchio_LIBRARY_DIRS ${pinocchio_INCLUDE_DIRS}/../lib)
-	set(pinocchio_LIBRARIES pinocchio)
-else()
-	if(EXISTS $ENV{ROS_PACKAGE_PATH}/cmake/pinocchio)
-		set(pinocchio_DIR $ENV{ROS_PACKAGE_PATH}/cmake/pinocchio) #Fix for Ubuntu
-	endif()
-	find_package(catkin REQUIRED COMPONENTS pinocchio)
-endif()
-
 ###########
 # Library #
 ###########
@@ -76,6 +64,9 @@ target_link_libraries(franka PUBLIC rt)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_BINARY_DIR}/FrankaConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY AnyNewerVersion)
 export(TARGETS franka FILE "${PROJECT_BINARY_DIR}/FrankaConfig.cmake")
+
+#franka_emulator.sh
+configure_file(source/franka_emulator.sh franka_emulator.sh)
 
 # example
 add_executable(franka_example example/example.cpp)

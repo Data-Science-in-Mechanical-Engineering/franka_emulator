@@ -70,6 +70,7 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
     scheduling_parameters.sched_priority = 90;
     if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
     if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_attr_setinheritsched failed");
+    std::cerr << *((size_t*)&_shared->plugin_to_robot_condition) << " " << *((size_t*)&_shared->plugin_to_robot_mutex) << std::endl;
     if (pthread_create(&_real_time_thread, &pthread_attributes.data, [](void* uncasted_plugin) -> void*
     {
         Plugin *plugin = (Plugin*)uncasted_plugin;
@@ -81,24 +82,30 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
             if (time.tv_nsec > 1000*1000*1000) { time.tv_nsec -= 1000*1000*1000; time.tv_sec++; }
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
             plugin->_model->GetWorld()->WorldPoseMutex().lock();
+            
+            std::cerr << "Signaling" << std::endl;
+            pthread_mutex_lock(&plugin->_shared->plugin_to_robot_mutex);
             for (size_t i = 0; i < 7; i++)
             {
                 plugin->_shared->robot_state.q[i] = plugin->_joints[i]->Position(0);
                 plugin->_shared->robot_state.dq[i] = plugin->_joints[i]->GetVelocity(0);
             }
-            
-            pthread_mutex_lock(&plugin->_shared->plugin_to_robot_mutex);
             pthread_cond_signal(&plugin->_shared->plugin_to_robot_condition);
             pthread_mutex_unlock(&plugin->_shared->plugin_to_robot_mutex);
 
-            struct timespec timeout;
-            timeout.tv_sec = 0;
-            timeout.tv_nsec = 300 * 1000;
+            std::cerr << "Waiting" << std::endl;
             pthread_mutex_lock(&plugin->_shared->robot_to_plugin_mutex);
+            timespec timeout;
+            clock_gettime(CLOCK_REALTIME, &timeout);
+            timeout.tv_nsec += _nanosecond_timeout;
+            if (timeout.tv_nsec > 1000*1000*1000) { timeout.tv_nsec -= 1000*1000*1000; timeout.tv_sec++; } 
             pthread_cond_timedwait(&plugin->_shared->robot_to_plugin_condition, &plugin->_shared->robot_to_plugin_mutex, &timeout);
+            for (size_t i = 0; i < 7; i++)
+            {
+                plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
+            }
             pthread_mutex_unlock(&plugin->_shared->robot_to_plugin_mutex);
             
-            for (size_t i = 0; i < 7; i++) plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
             plugin->_model->GetWorld()->WorldPoseMutex().unlock();
         }
         return nullptr;
