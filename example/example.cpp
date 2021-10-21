@@ -2,11 +2,17 @@
 #include "../include/franka/model.h"
 #include <iostream>
 
-int _main()
+int _main(int argc, char **argv)
 {
+    if (argc != 2)
+    {
+        std::cout << "Usage: ./franka_example <IP>" << std::endl;
+        return 1;
+    }
+
     try
     {
-        franka::Robot robot("192.168.0.1");
+        franka::Robot robot(argv[1]);
         franka::Model model = robot.loadModel();
         size_t call = 0;
         robot.control([&call, &model](const franka::RobotState& robot_state, franka::Duration) -> franka::Torques
@@ -33,7 +39,7 @@ int _main()
     return 0;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    return _main();
+    return _main(argc, argv);
 }
