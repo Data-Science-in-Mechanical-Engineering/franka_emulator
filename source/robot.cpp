@@ -6,33 +6,54 @@
 #include <sched.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <iostream> //DEBUG
 
 franka::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
 {
-    _shared_name = std::string("/franka_emulator_") + franka_address;
-    _shared_file = shm_open(_shared_name.c_str(), O_RDWR, 0644);
+    //Opening shaed memory
+    _ip = franka_address;
+    _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_RDWR, 0644);
     if (_shared_file < 0) throw NetworkException("franka_emulator::Robot::Robot: shm_open failed");
     _shared = (emulator::Shared*) mmap(nullptr, sizeof(emulator::Shared), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, _shared_file, 0);
     if (_shared == MAP_FAILED) throw NetworkException("franka_emulator::Robot::Robot: mmap failed");
+
+    //Opening semaphores
+    _plugin_to_robot_mutex = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str(), 0, 0644, 0);
+    if (_plugin_to_robot_mutex == SEM_FAILED) throw NetworkException("franka_emulator::Robot::Robot: sem_open failed");
+    _plugin_to_robot_condition = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_condition").c_str(), 0, 0644, 0);
+    if (_plugin_to_robot_condition == SEM_FAILED) throw NetworkException("franka_emulator::Robot::Robot: sem_open failed");
+    _robot_to_plugin_mutex = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_mutex").c_str(), 0, 0644, 0);
+    if (_robot_to_plugin_mutex == SEM_FAILED) throw NetworkException("franka_emulator::Robot::Robot: sem_open failed");
+    _robot_to_plugin_condition = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_condition").c_str(), 0, 0644, 0);
+    if (_robot_to_plugin_condition == SEM_FAILED) throw NetworkException("franka_emulator::Robot::Robot: sem_open failed");
 }
 
 franka::Robot::Robot(Robot&& other) noexcept
 {
-    _shared_name = other._shared_name;
-    _shared_file = other._shared_file;
-    _shared = other._shared;
-    other._shared_file = -1;
-    other._shared = nullptr;
-    other._shared_name = "";
+    *this = std::move(other);
 }
 
 franka::Robot& franka::Robot::operator=(Robot&& other) noexcept
 {
-    _shared_file = other._shared_file;
-    _shared = other._shared;
-    other._shared_file = -1;
-    other._shared = nullptr;
+    _context                    = other._context;
+    _callback                   = other._callback;
+    _ip                         = other._ip;
+    _shared_file                = other._shared_file;
+    _plugin_to_robot_mutex      = other._plugin_to_robot_mutex;
+    _plugin_to_robot_condition  = other._plugin_to_robot_condition;
+    _robot_to_plugin_mutex      = other._robot_to_plugin_mutex;
+    _robot_to_plugin_condition  = other._robot_to_plugin_condition;
+    _shared                     = other._shared;
+    other._context                  = nullptr;
+    other._callback                 = nullptr;
+    other._ip                       = "";
+    other._shared_file              = -1;
+    other._plugin_to_robot_mutex    = nullptr;
+    other._plugin_to_robot_condition= nullptr;
+    other._robot_to_plugin_mutex    = nullptr;
+    other._robot_to_plugin_condition= nullptr;
+    other._shared                   = nullptr;
     return *this;
 }
 
@@ -46,10 +67,35 @@ franka::Robot::~Robot() noexcept
 
     if (_shared_file >= 0)
     {
-        shm_unlink(_shared_name.c_str());
+        shm_unlink(("/franka_emulator_" + _ip + "_memory").c_str());
         _shared_file = -1;
-        _shared_name = "";
     }
+
+    if (_plugin_to_robot_mutex != nullptr && _robot_to_plugin_mutex != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str());
+        _plugin_to_robot_mutex = SEM_FAILED;
+    }
+
+    if (_plugin_to_robot_condition != nullptr && _robot_to_plugin_condition != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_plugin_to_robot_condition").c_str());
+        _plugin_to_robot_condition = SEM_FAILED;
+    }
+
+    if (_robot_to_plugin_mutex != nullptr && _robot_to_plugin_mutex != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_robot_to_plugin_mutex").c_str());
+        _robot_to_plugin_mutex = SEM_FAILED;
+    }
+
+    if (_robot_to_plugin_condition != nullptr && _robot_to_plugin_condition != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_robot_to_plugin_condition").c_str());
+        _robot_to_plugin_condition = SEM_FAILED;
+    }
+
+    _ip = "";
 }
 
 void franka::Robot::_control()
@@ -62,27 +108,26 @@ void franka::Robot::_control()
     } pthread_attributes;    
     if (pthread_attr_setschedpolicy(&pthread_attributes.data, SCHED_FIFO) != 0) throw RealtimeException("franka_emulator::Robot::_control: pthread_attr_setschedpolicy failed");
     sched_param scheduling_parameters;
-    scheduling_parameters.sched_priority = 90;
+    scheduling_parameters.sched_priority = 80;
     if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw RealtimeException("franka_emulator::Robot::_control: pthread_attr_setschedpolicy failed");
     if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw RealtimeException("franka_emulator::Robot::_control: pthread_attr_setinheritsched failed");
     pthread_t real_time_thread;
-    std::cerr << *((size_t*)&_shared->plugin_to_robot_condition) << " " << *((size_t*)&_shared->plugin_to_robot_mutex) << std::endl;
     if (pthread_create(&real_time_thread, &pthread_attributes.data, [](void* uncasted_robot) -> void*
     {
         Robot *robot = (Robot*)uncasted_robot;
         while (true)
         {
             std::cerr << "Waiting" << std::endl;
-            pthread_mutex_lock(&robot->_shared->plugin_to_robot_mutex);
-            std::cerr << "Waiting" << std::endl;
-            pthread_cond_wait(&robot->_shared->plugin_to_robot_condition, &robot->_shared->plugin_to_robot_mutex);
-            pthread_mutex_unlock(&robot->_shared->plugin_to_robot_mutex);
-
+            sem_wait(robot->_plugin_to_robot_condition);
+    
             std::cerr << "Signaling" << std::endl;
-            pthread_mutex_lock(&robot->_shared->robot_to_plugin_mutex);
-            bool finished = (*robot->_callback)(robot);
-            pthread_cond_signal(&robot->_shared->robot_to_plugin_condition);
-            pthread_mutex_unlock(&robot->_shared->robot_to_plugin_mutex);
+            sem_wait(robot->_robot_to_plugin_mutex);
+            bool finished; try { finished = (*robot->_callback)(robot); } //Operation also hidden behind mutex
+            catch (...) { finished = true; }
+            int robot_to_plugin_condition;
+            sem_getvalue(robot->_robot_to_plugin_condition, &robot_to_plugin_condition);
+            if (robot_to_plugin_condition == 0) sem_post(robot->_robot_to_plugin_condition);
+            sem_post(robot->_robot_to_plugin_mutex);
 
             if (finished) return nullptr;
         }
@@ -256,10 +301,11 @@ void franka::Robot::read(std::function<bool(const RobotState&)> callback)
 
 franka::RobotState franka::Robot::readOnce()
 {
-    pthread_mutex_lock(&_shared->plugin_to_robot_mutex);
-    pthread_cond_wait(&_shared->plugin_to_robot_condition, &_shared->plugin_to_robot_mutex);
+    sem_wait(_plugin_to_robot_condition);
+    sem_wait(_plugin_to_robot_mutex);
+    
     RobotState robot_state = _shared->robot_state;
-    pthread_mutex_unlock(&_shared->plugin_to_robot_mutex);
+    sem_post(_plugin_to_robot_mutex);
     return robot_state;
 }
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "emulator/shared.h"
+#include <semaphore.h>
 #include "command_types.h"
 #include "control_types.h"
 #include "duration.h"
@@ -692,12 +693,17 @@ class Robot {
 
 private:
   typedef bool (Callback)(Robot*);
-  std::string _shared_name  = "";
-  int _shared_file          = -1;
-  emulator::Shared *_shared = nullptr;
-  void *_context            = nullptr;
-  Callback *_callback       = nullptr;
+  void *_context                = nullptr;
+  Callback *_callback           = nullptr;
   void _control();
+
+  std::string _ip                   = "";
+  int _shared_file                  = -1;
+  sem_t *_plugin_to_robot_mutex     = nullptr;
+  sem_t *_plugin_to_robot_condition = nullptr;
+  sem_t *_robot_to_plugin_mutex     = nullptr;
+  sem_t *_robot_to_plugin_condition = nullptr;
+  emulator::Shared *_shared         = nullptr;
 };
 
 }  // namespace franka

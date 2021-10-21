@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdexcept>
 
 franka::emulator::Plugin::Plugin()
 {
@@ -29,34 +30,26 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
     _fingers[0]->SetPosition(0, 0.0);
     _fingers[1]->SetPosition(0, 0.0);
 
+    //Getting IP
+    const char *ip = getenv("FRANKA_EMULATOR_IP");
+    if (ip == nullptr) throw std::runtime_error("franka_emulator::Plugin::Load: FRANKA_EMULATOR_IP is not set");
+    _ip = ip;
+
     //Opening shared memory
-    _shared_name = std::string("/franka_emulator_") + "192.168.0.1";
-    _shared_file = shm_open(_shared_name.c_str(), O_CREAT | O_RDWR, 0644);
-    if (_shared_file < 0) throw std::runtime_error("franka_emulator::Plugin::Load: shm_open failed");
+    _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_CREAT | O_EXCL | O_RDWR, 0644);
+    if (_shared_file < 0) throw std::runtime_error("franka_emulator::Robot::Robot: shm_open failed");
     _shared = (emulator::Shared*) mmap(nullptr, sizeof(emulator::Shared), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, _shared_file, 0);
-    if (_shared == MAP_FAILED) throw std::runtime_error("franka_emulator::Plugin::Load: mmap failed");
+    if (_shared == MAP_FAILED) throw std::runtime_error("franka_emulator::Robot::Robot: mmap failed");
 
-    //Creating mutexes
-    struct MutexAttributes
-    {
-        pthread_mutexattr_t data;
-        MutexAttributes() { if (pthread_mutexattr_init(&data) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_mutexattr_init failed"); }
-        ~MutexAttributes() { pthread_mutexattr_destroy(&data); }
-    } mutex_attributes;
-    pthread_mutexattr_setpshared(&mutex_attributes.data, PTHREAD_PROCESS_SHARED);
-    if(pthread_mutex_init(&_shared->robot_to_plugin_mutex, &mutex_attributes.data) != 0
-    || pthread_mutex_init(&_shared->plugin_to_robot_mutex, &mutex_attributes.data) != 0) throw std::runtime_error("franka_timeout_handler: pthread_mutex_init failed");
-
-    //Creating condition variables
-    struct ConditionAttributes
-    {
-        pthread_condattr_t data;
-        ConditionAttributes() { if (pthread_condattr_init(&data) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_condattr_init failed"); }
-        ~ConditionAttributes() { pthread_condattr_destroy(&data); }
-    } condition_attributes;
-    pthread_condattr_setpshared(&condition_attributes.data, PTHREAD_PROCESS_SHARED);
-    if(pthread_cond_init(&_shared->robot_to_plugin_condition, &condition_attributes.data) != 0
-    || pthread_cond_init(&_shared->plugin_to_robot_condition, &condition_attributes.data) != 0) throw std::runtime_error("franka_timeout_handler: pthread_cond_init failed");
+    //Opening semaphores
+    _plugin_to_robot_mutex = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str(), 0, 0644, 1);
+    if (_plugin_to_robot_mutex == SEM_FAILED) throw std::runtime_error("franka_emulator::Robot::Robot: sem_open failed");
+    _plugin_to_robot_condition = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_condition").c_str(), 0, 0644, 0);
+    if (_plugin_to_robot_condition == SEM_FAILED) throw std::runtime_error("franka_emulator::Robot::Robot: sem_open failed");
+    _robot_to_plugin_mutex = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_mutex").c_str(), 0, 0644, 1);
+    if (_robot_to_plugin_mutex == SEM_FAILED) throw std::runtime_error("franka_emulator::Robot::Robot: sem_open failed");
+    _robot_to_plugin_condition = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_condition").c_str(), 0, 0644, 0);
+    if (_robot_to_plugin_condition == SEM_FAILED) throw std::runtime_error("franka_emulator::Robot::Robot: sem_open failed");
 
     //Creating real-time thread
     struct PthreadAttributes
@@ -70,7 +63,6 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
     scheduling_parameters.sched_priority = 90;
     if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
     if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka_emulator::Plugin::Load: pthread_attr_setinheritsched failed");
-    std::cerr << *((size_t*)&_shared->plugin_to_robot_condition) << " " << *((size_t*)&_shared->plugin_to_robot_mutex) << std::endl;
     if (pthread_create(&_real_time_thread, &pthread_attributes.data, [](void* uncasted_plugin) -> void*
     {
         Plugin *plugin = (Plugin*)uncasted_plugin;
@@ -84,27 +76,29 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
             plugin->_model->GetWorld()->WorldPoseMutex().lock();
             
             std::cerr << "Signaling" << std::endl;
-            pthread_mutex_lock(&plugin->_shared->plugin_to_robot_mutex);
+            sem_wait(plugin->_plugin_to_robot_mutex);
             for (size_t i = 0; i < 7; i++)
             {
                 plugin->_shared->robot_state.q[i] = plugin->_joints[i]->Position(0);
                 plugin->_shared->robot_state.dq[i] = plugin->_joints[i]->GetVelocity(0);
             }
-            pthread_cond_signal(&plugin->_shared->plugin_to_robot_condition);
-            pthread_mutex_unlock(&plugin->_shared->plugin_to_robot_mutex);
+            int plugin_to_robot_condition;
+            sem_getvalue(plugin->_plugin_to_robot_condition, &plugin_to_robot_condition);
+            if (plugin_to_robot_condition == 0) sem_post(plugin->_plugin_to_robot_condition);
+            sem_post(plugin->_plugin_to_robot_mutex);
 
             std::cerr << "Waiting" << std::endl;
-            pthread_mutex_lock(&plugin->_shared->robot_to_plugin_mutex);
             timespec timeout;
             clock_gettime(CLOCK_REALTIME, &timeout);
             timeout.tv_nsec += _nanosecond_timeout;
-            if (timeout.tv_nsec > 1000*1000*1000) { timeout.tv_nsec -= 1000*1000*1000; timeout.tv_sec++; } 
-            pthread_cond_timedwait(&plugin->_shared->robot_to_plugin_condition, &plugin->_shared->robot_to_plugin_mutex, &timeout);
+            if (timeout.tv_nsec > 1000*1000*1000) { timeout.tv_nsec -= 1000*1000*1000; timeout.tv_sec++; }
+            sem_timedwait(plugin->_robot_to_plugin_condition, &timeout);
+            sem_wait(plugin->_robot_to_plugin_mutex);
             for (size_t i = 0; i < 7; i++)
             {
                 plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
             }
-            pthread_mutex_unlock(&plugin->_shared->robot_to_plugin_mutex);
+            sem_post(plugin->_robot_to_plugin_mutex);
             
             plugin->_model->GetWorld()->WorldPoseMutex().unlock();
         }
@@ -115,15 +109,44 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
 
 franka::emulator::Plugin::~Plugin()
 {
-    if (_shared != nullptr && _shared != MAP_FAILED)
-    {
-        pthread_mutex_destroy(&_shared->robot_to_plugin_mutex);
-        pthread_mutex_destroy(&_shared->plugin_to_robot_mutex);
-        pthread_cond_destroy(&_shared->robot_to_plugin_condition);
-        pthread_cond_destroy(&_shared->plugin_to_robot_condition);
-        shm_unlink(_shared_name.c_str());
-    }
     _finish = true;
     pthread_join(_real_time_thread, nullptr);
+
+    if (_shared != nullptr && _shared != MAP_FAILED)
+    {
+        munmap(_shared, sizeof(emulator::Shared));
+        _shared = nullptr;
+    }
+
+    if (_shared_file >= 0)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_memory").c_str());
+        _shared_file = -1;
+    }
+
+    if (_plugin_to_robot_mutex != nullptr && _robot_to_plugin_mutex != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str());
+        _plugin_to_robot_mutex = SEM_FAILED;
+    }
+
+    if (_plugin_to_robot_condition != nullptr && _robot_to_plugin_condition != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_plugin_to_robot_condition").c_str());
+        _plugin_to_robot_condition = SEM_FAILED;
+    }
+
+    if (_robot_to_plugin_mutex != nullptr && _robot_to_plugin_mutex != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_robot_to_plugin_mutex").c_str());
+        _robot_to_plugin_mutex = SEM_FAILED;
+    }
+
+    if (_robot_to_plugin_condition != nullptr && _robot_to_plugin_condition != SEM_FAILED)
+    {
+        shm_unlink(("/franka_emulator_" + _ip + "_robot_to_plugin_condition").c_str());
+        _robot_to_plugin_condition = SEM_FAILED;
+    }
+
     std::cerr << "franka::emulator::Plugin unloaded" << std::endl;
 }
