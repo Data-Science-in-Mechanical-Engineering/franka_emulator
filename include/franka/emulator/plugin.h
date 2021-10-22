@@ -28,8 +28,8 @@ namespace franka
 
         public:
             Plugin();
-            void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
-            ~Plugin();
+            virtual void Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf);
+            virtual ~Plugin();
         };
 
         GZ_REGISTER_MODEL_PLUGIN(franka::emulator::Plugin)

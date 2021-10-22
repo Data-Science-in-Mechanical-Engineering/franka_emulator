@@ -3,11 +3,10 @@
 #include "../include/franka/exception.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sched.h>
-#include <fcntl.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <sched.h>
 #include <semaphore.h>
-#include <iostream> //DEBUG
 
 franka::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
 {
@@ -15,7 +14,7 @@ franka::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
     _ip = franka_address;
     _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_RDWR, 0644);
     if (_shared_file < 0) throw NetworkException("franka_emulator::Robot::Robot: shm_open failed");
-    _shared = (emulator::Shared*) mmap(nullptr, sizeof(emulator::Shared), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, _shared_file, 0);
+    _shared = (emulator::Shared*) mmap(nullptr, emulator::shared_size, PROT_READ | PROT_WRITE, MAP_SHARED, _shared_file, 0);
     if (_shared == MAP_FAILED) throw NetworkException("franka_emulator::Robot::Robot: mmap failed");
 
     //Opening semaphores
@@ -61,7 +60,7 @@ franka::Robot::~Robot() noexcept
 {
     if (_shared != nullptr && _shared != MAP_FAILED)
     {
-        munmap(_shared, sizeof(emulator::Shared));
+        munmap(_shared, emulator::shared_size);
         _shared = nullptr;
     }
 
@@ -117,10 +116,8 @@ void franka::Robot::_control()
         Robot *robot = (Robot*)uncasted_robot;
         while (true)
         {
-            std::cerr << "Waiting" << std::endl;
             sem_wait(robot->_plugin_to_robot_condition);
-    
-            std::cerr << "Signaling" << std::endl;
+
             sem_wait(robot->_robot_to_plugin_mutex);
             bool finished; try { finished = (*robot->_callback)(robot); } //Operation also hidden behind mutex
             catch (...) { finished = true; }

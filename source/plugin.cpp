@@ -2,10 +2,14 @@
 #include <gazebo/physics/World.hh>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/Joint.hh>
-#include <iostream>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include <fcntl.h>
+#include <sched.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <iostream>
 #include <stdexcept>
 
 franka::emulator::Plugin::Plugin()
@@ -38,9 +42,10 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
         _ip = ip;
 
         //Opening shared memory
-        _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_CREAT | O_TRUNC | O_RDWR, 0644);
+        _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_CREAT | O_RDWR, 0644);
         if (_shared_file < 0) throw std::runtime_error("franka::emulator::Robot::Robot: shm_open failed");
-        _shared = (emulator::Shared*) mmap(nullptr, sizeof(emulator::Shared), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, _shared_file, 0);
+        if (ftruncate(_shared_file, emulator::shared_size) != 0) throw std::runtime_error("franka::emulator::Robot::Robot: ftruncate failed");
+        _shared = (emulator::Shared*) mmap(nullptr, emulator::shared_size, PROT_READ | PROT_WRITE, MAP_SHARED, _shared_file, 0);
         if (_shared == MAP_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: mmap failed");
  
         //Opening semaphores
@@ -75,9 +80,9 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 time.tv_nsec += 1000*1000;
                 if (time.tv_nsec > 1000*1000*1000) { time.tv_nsec -= 1000*1000*1000; time.tv_sec++; }
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
+                if (plugin->_model->GetWorld()->IsPaused()) continue;
                 plugin->_model->GetWorld()->WorldPoseMutex().lock();
                 
-                std::cerr << "Signaling" << std::endl;
                 sem_wait(plugin->_plugin_to_robot_mutex);
                 for (size_t i = 0; i < 7; i++)
                 {
@@ -89,7 +94,6 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 if (plugin_to_robot_condition == 0) sem_post(plugin->_plugin_to_robot_condition);
                 sem_post(plugin->_plugin_to_robot_mutex);
 
-                std::cerr << "Waiting" << std::endl;
                 timespec timeout;
                 clock_gettime(CLOCK_REALTIME, &timeout);
                 timeout.tv_nsec += _nanosecond_timeout;
@@ -101,7 +105,12 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                     plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
                 }
                 sem_post(plugin->_robot_to_plugin_mutex);
-                
+                /*
+                static const double stiffness[7] = { 600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0 };
+                static const double damping[7] = { 50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0 };
+                static const double target[7] = { 0.0, -M_PI / 4, 0.0, -3 * M_PI / 4, 0.0, M_PI / 2, M_PI / 4 };
+                for (size_t i = 0; i < 7; i++) plugin->_joints[i]->SetForce(0, stiffness[i] * (target[i] - plugin->_joints[i]->Position(0)) - damping[i] * plugin->_joints[i]->GetVelocity(0));
+                */
                 plugin->_model->GetWorld()->WorldPoseMutex().unlock();
             }
             return nullptr;
@@ -122,7 +131,7 @@ franka::emulator::Plugin::~Plugin()
 
     if (_shared != nullptr && _shared != MAP_FAILED)
     {
-        munmap(_shared, sizeof(emulator::Shared));
+        munmap(_shared, emulator::shared_size);
         _shared = nullptr;
     }
 

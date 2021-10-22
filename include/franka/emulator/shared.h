@@ -11,5 +11,7 @@ namespace franka
         {
             RobotState robot_state;
         };
+
+        static const size_t shared_size = ((sizeof(Shared) + 4095) / 4096) * 4096;
     }
 }
