@@ -705,11 +705,6 @@
       <velocity_decay/>
     </link>
     <static>0</static>
-    <plugin name='gazebo_ros_control' filename='libgazebo_ros_control.so'>
-      <robotNamespace>panda</robotNamespace>
-      <controlPeriod>0.001</controlPeriod>
-      <robotSimType>franka_gazebo/FrankaHWSim</robotSimType>
-    </plugin>
     <self_collide>1</self_collide>
   </model>
 </sdf>

@@ -47,6 +47,7 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
         if (ftruncate(_shared_file, emulator::shared_size) != 0) throw std::runtime_error("franka::emulator::Robot::Robot: ftruncate failed");
         _shared = (emulator::Shared*) mmap(nullptr, emulator::shared_size, PROT_READ | PROT_WRITE, MAP_SHARED, _shared_file, 0);
         if (_shared == MAP_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: mmap failed");
+        memset(_shared, 0, emulator::shared_size);
  
         //Opening semaphores
         _plugin_to_robot_mutex = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str(), O_CREAT, 0644, 1);
@@ -73,6 +74,7 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
         if (pthread_create(&_real_time_thread, &pthread_attributes.data, [](void* uncasted_plugin) -> void*
         {
             Plugin *plugin = (Plugin*)uncasted_plugin;
+            double previous_torque[7] = { 0, 0, 0, 0, 0, 0, 0 };
             struct timespec time;
             clock_gettime(CLOCK_MONOTONIC, &time);
             while (!plugin->_finish)
@@ -82,7 +84,7 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
                 if (plugin->_model->GetWorld()->IsPaused()) continue;
                 plugin->_model->GetWorld()->WorldPoseMutex().lock();
-                
+
                 sem_wait(plugin->_plugin_to_robot_mutex);
                 for (size_t i = 0; i < 7; i++)
                 {
@@ -102,7 +104,9 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 sem_wait(plugin->_robot_to_plugin_mutex);
                 for (size_t i = 0; i < 7; i++)
                 {
+                    plugin->_joints[i]->SetForce(0, -previous_torque[i]);
                     plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
+                    previous_torque[i] = plugin->_shared->robot_state.tau_J[i];
                 }
                 sem_post(plugin->_robot_to_plugin_mutex);
                 /*
