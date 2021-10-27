@@ -12,7 +12,7 @@
  * Contains helper functions for writing control loops.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Determines whether the given elbow configuration is valid or not.
@@ -75,4 +75,4 @@ bool hasRealtimeKernel();
  */
 bool setCurrentThreadToHighestSchedulerPriority(std::string* error_message);
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

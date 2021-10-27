@@ -8,12 +8,12 @@
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
 
-franka::Frame franka::operator++(Frame& frame, int /* dummy */) noexcept
+FRANKA_EMULATOR_CXX_NAME::Frame FRANKA_EMULATOR_CXX_NAME::operator++(Frame& frame, int /* dummy */) noexcept
 {
     return static_cast<Frame>(static_cast<int>(frame) + 1);
 }
 
-franka::Model::Model(franka::Network&)
+FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
 {
     pinocchio::urdf::buildModel("../model/franka.urdf", _model);
     _data = pinocchio::Data(_model);
@@ -32,7 +32,7 @@ franka::Model::Model(franka::Network&)
     }
 }
 
-franka::Model::Model(Model &&other) noexcept
+FRANKA_EMULATOR_CXX_NAME::Model::Model(Model &&other) noexcept
 {
     _model = other._model;
     _data = other._data;
@@ -40,20 +40,20 @@ franka::Model::Model(Model &&other) noexcept
     for (size_t i = 0; i < 7; i++) _link_frame_id[i] = other._link_frame_id[i];
 }
 
-franka::Model& franka::Model::operator=(Model&&) noexcept
+FRANKA_EMULATOR_CXX_NAME::Model& FRANKA_EMULATOR_CXX_NAME::Model::operator=(Model&&) noexcept
 {
     return *this;
 }
 
-franka::Model::~Model() noexcept
+FRANKA_EMULATOR_CXX_NAME::Model::~Model() noexcept
 {}
 
-std::array<double, 16> franka::Model::pose(Frame frame, const franka::RobotState& robot_state) const
+std::array<double, 16> FRANKA_EMULATOR_CXX_NAME::Model::pose(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const
 {
     return pose(frame, robot_state.q, robot_state.F_T_EE, robot_state.EE_T_K);
 }
 
-std::array<double, 16> franka::Model::pose(
+std::array<double, 16> FRANKA_EMULATOR_CXX_NAME::Model::pose(
     Frame frame,
     const std::array<double, 7>& q,
     const std::array<double, 16>& F_T_EE,
@@ -76,24 +76,24 @@ std::array<double, 16> franka::Model::pose(
         transform.linear() = se3.rotation_impl();
         transform.translation() = se3.translation_impl() + 0.210399 * transform.linear().col(2);
     }
-    else throw std::runtime_error("franka::Model::pose: Unknown frame");
+    else throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::Model::pose: Unknown frame");
     std::array<double, 16> result;
     Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
     return result;
 }
 
-std::array<double, 42> franka::Model::bodyJacobian(Frame frame, const franka::RobotState& robot_state) const
+std::array<double, 42> FRANKA_EMULATOR_CXX_NAME::Model::bodyJacobian(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const
 {
     return bodyJacobian(frame, robot_state.q, robot_state.F_T_EE, robot_state.EE_T_K);
 }
 
-std::array<double, 42> franka::Model::bodyJacobian(
+std::array<double, 42> FRANKA_EMULATOR_CXX_NAME::Model::bodyJacobian(
     Frame frame,
     const std::array<double, 7>& q,
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
-    if (static_cast<size_t>(frame) < static_cast<size_t>(Frame::kJoint1) || static_cast<size_t>(frame) > static_cast<size_t>(Frame::kJoint7)) throw std::runtime_error("franka::Model::pose: Unknown frame");
+    if (static_cast<size_t>(frame) < static_cast<size_t>(Frame::kJoint1) || static_cast<size_t>(frame) > static_cast<size_t>(Frame::kJoint7)) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::Model::pose: Unknown frame");
     Eigen::Matrix<double, 9, 1> full_q;
     full_q.block<7, 1>(0, 0) = Eigen::Matrix<double, 7, 1>::Map(&q[0]);
     full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
@@ -104,18 +104,18 @@ std::array<double, 42> franka::Model::bodyJacobian(
     return result;
 }
 
-std::array<double, 42> franka::Model::zeroJacobian(Frame frame, const franka::RobotState& robot_state) const
+std::array<double, 42> FRANKA_EMULATOR_CXX_NAME::Model::zeroJacobian(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const
 {
     return zeroJacobian(frame, robot_state.q, robot_state.F_T_EE, robot_state.EE_T_K);
 }
 
-std::array<double, 42> franka::Model::zeroJacobian(
+std::array<double, 42> FRANKA_EMULATOR_CXX_NAME::Model::zeroJacobian(
     Frame frame,
     const std::array<double, 7>& q,
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
-    if (static_cast<size_t>(frame) < static_cast<size_t>(Frame::kJoint1) || static_cast<size_t>(frame) > static_cast<size_t>(Frame::kJoint7)) throw std::runtime_error("franka::Model::pose: Unknown frame");
+    if (static_cast<size_t>(frame) < static_cast<size_t>(Frame::kJoint1) || static_cast<size_t>(frame) > static_cast<size_t>(Frame::kJoint7)) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::Model::pose: Unknown frame");
     Eigen::Matrix<double, 9, 1> full_q;
     full_q.block<7, 1>(0, 0) = Eigen::Matrix<double, 7, 1>::Map(&q[0]);
     full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
@@ -126,12 +126,12 @@ std::array<double, 42> franka::Model::zeroJacobian(
     return result;
 }
 
-std::array<double, 49> franka::Model::mass(const franka::RobotState& robot_state) const noexcept
+std::array<double, 49> FRANKA_EMULATOR_CXX_NAME::Model::mass(const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const noexcept
 {
     return mass(robot_state.q, robot_state.I_total, robot_state.m_total, robot_state.F_x_Ctotal);
 }
 
-std::array<double, 49> franka::Model::mass(
+std::array<double, 49> FRANKA_EMULATOR_CXX_NAME::Model::mass(
     const std::array<double, 7>& q,
     const std::array<double, 9>& I_total,
     double m_total,
@@ -147,12 +147,12 @@ std::array<double, 49> franka::Model::mass(
     return result;
 }
 
-std::array<double, 7> franka::Model::coriolis(const franka::RobotState& robot_state) const noexcept
+std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::Model::coriolis(const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const noexcept
 {
     return coriolis(robot_state.q, robot_state.dq, robot_state.I_total, robot_state.m_total, robot_state.F_x_Ctotal);
 }
 
-std::array<double, 7> franka::Model::coriolis(
+std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::Model::coriolis(
     const std::array<double, 7>& q,
     const std::array<double, 7>& dq,
     const std::array<double, 9>& I_total,
@@ -171,7 +171,7 @@ std::array<double, 7> franka::Model::coriolis(
     return result;
 }
 
-std::array<double, 7> franka::Model::gravity(
+std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::Model::gravity(
     const std::array<double, 7>& q,
     double m_total,
     const std::array<double, 3>& F_x_Ctotal,
@@ -186,8 +186,8 @@ std::array<double, 7> franka::Model::gravity(
     return result;
 }
 
-std::array<double, 7> franka::Model::gravity(
-    const franka::RobotState& robot_state,
+std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::Model::gravity(
+    const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state,
     const std::array<double, 3>& gravity_earth) const noexcept
 {
     return gravity(robot_state.q, robot_state.m_total, robot_state.F_x_Ctotal, gravity_earth);

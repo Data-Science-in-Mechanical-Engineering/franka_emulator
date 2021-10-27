@@ -10,7 +10,7 @@
  * Contains functions for filtering signals with a low-pass filter.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 /**
  * Maximum cutoff frequency
  */
@@ -57,4 +57,4 @@ std::array<double, 16> cartesianLowpassFilter(double sample_time,
                                               std::array<double, 16> y,
                                               std::array<double, 16> y_last,
                                               double cutoff_frequency);
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

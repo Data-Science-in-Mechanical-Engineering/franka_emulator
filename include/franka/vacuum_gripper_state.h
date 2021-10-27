@@ -13,7 +13,7 @@
  * Contains the franka::VacuumGripperState type.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Vacuum gripper device status.
@@ -75,6 +75,6 @@ struct VacuumGripperState {
  * @return Ostream instance
  */
 std::ostream& operator<<(std::ostream& ostream,
-                         const franka::VacuumGripperState& vacuum_gripper_state);
+                         const FRANKA_EMULATOR_CXX_NAME::VacuumGripperState& vacuum_gripper_state);
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

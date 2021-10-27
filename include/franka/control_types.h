@@ -12,7 +12,7 @@
  * Contains helper types for returning motion generation and joint-level torque commands.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Available controller modes for a franka::Robot.
@@ -338,4 +338,4 @@ inline CartesianVelocities MotionFinished(  // NOLINT(readability-identifier-nam
   return command;
 }
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

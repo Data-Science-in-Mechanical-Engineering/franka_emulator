@@ -12,7 +12,7 @@
  * Contains exception definitions.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Base class for all exceptions used by `libfranka`.
@@ -77,12 +77,12 @@ struct ControlException : public Exception {
    * @param[in] what Explanatory string.
    * @param[in] log Vector of last received states and commands.
    */
-  explicit ControlException(const std::string& what, std::vector<franka::Record> log = {}) noexcept;
+  explicit ControlException(const std::string& what, std::vector<FRANKA_EMULATOR_CXX_NAME::Record> log = {}) noexcept;
 
   /**
    * Vector of states and commands logged just before the exception occured.
    */
-  const std::vector<franka::Record> log;
+  const std::vector<FRANKA_EMULATOR_CXX_NAME::Record> log;
 };
 
 /**
@@ -106,4 +106,4 @@ struct InvalidOperationException : public Exception {
   using Exception::Exception;
 };
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

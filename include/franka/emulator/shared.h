@@ -3,7 +3,7 @@
 #include "../robot_state.h"
 #include <pthread.h>
 
-namespace franka
+namespace FRANKA_EMULATOR_CXX_NAME
 {
     namespace emulator
     {

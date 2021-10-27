@@ -3,14 +3,14 @@
 #include <pthread.h>
 #include <string.h>
 
-bool franka::hasRealtimeKernel()
+bool FRANKA_EMULATOR_CXX_NAME::hasRealtimeKernel()
 {
     utsname name;
     uname(&name);
     return strstr(name.release, "rt") != nullptr;
 }
 
-bool franka::setCurrentThreadToHighestSchedulerPriority(std::string*)
+bool FRANKA_EMULATOR_CXX_NAME::setCurrentThreadToHighestSchedulerPriority(std::string*)
 {
     return pthread_setschedprio(pthread_self(), 99) == 0;
 }

@@ -12,7 +12,7 @@
  * Contains helper types for logging sent commands and received robot states.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Command sent to the robot. Structure used only for logging purposes.
@@ -67,4 +67,4 @@ struct Record {
  * @return a string in CSV format, or empty string.
  */
 std::string logToCSV(const std::vector<Record>& log);
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

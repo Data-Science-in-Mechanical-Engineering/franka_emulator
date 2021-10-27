@@ -12,10 +12,10 @@ int _main(int argc, char **argv)
 
     try
     {
-        franka::Robot robot(argv[1]);
-        franka::Model model = robot.loadModel();
+        FRANKA_EMULATOR_CXX_NAME::Robot robot(argv[1]);
+        FRANKA_EMULATOR_CXX_NAME::Model model = robot.loadModel();
         size_t call = 0;
-        robot.control([&call, &model](const franka::RobotState& robot_state, franka::Duration) -> franka::Torques
+        robot.control([&call, &model](const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state, FRANKA_EMULATOR_CXX_NAME::Duration) -> FRANKA_EMULATOR_CXX_NAME::Torques
         {
             static const size_t period = 2000;
             static const size_t duration = 10000;
@@ -25,7 +25,7 @@ int _main(int argc, char **argv)
             std::array<double, 7> coriolis = model.coriolis(robot_state);
             static const double stiffness[7] = { 600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0 };
             static const double damping[7] = { 50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0 };
-            franka::Torques torques(std::array<double, 7>{});
+            FRANKA_EMULATOR_CXX_NAME::Torques torques(std::array<double, 7>{});
             for (size_t i = 0; i < 7; i++) torques.tau_J[i] = stiffness[i] * (target[i] - robot_state.q[i]) - damping[i] * robot_state.dq[i] + coriolis[i];
             torques.motion_finished = call > duration;
             return torques;

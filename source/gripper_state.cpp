@@ -1,6 +1,6 @@
 #include "../include/franka/gripper_state.h"
 
-std::ostream& operator<<(std::ostream& ostream, const franka::GripperState& gripper_state)
+std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR_CXX_NAME::GripperState& gripper_state)
 {
     ostream
     << "{\"width\": " << gripper_state.width

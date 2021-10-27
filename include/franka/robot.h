@@ -20,7 +20,7 @@
  * Contains the franka::Robot type.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 class Model;
 
@@ -106,7 +106,7 @@ class Robot {
    * in order to be accepted. Callback functions take two parameters:
    *
    * * A franka::RobotState showing the current robot state.
-   * * A franka::Duration to indicate the time since the last callback invocation. Thus, the
+   * * A FRANKA_EMULATOR_CXX_NAME::Duration to indicate the time since the last callback invocation. Thus, the
    *   duration is zero on the first invocation of the callback function!
    *
    * The following incomplete example shows the general structure of a callback function:
@@ -150,7 +150,7 @@ class Robot {
    *
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
-  void control(std::function<Torques(const RobotState&, franka::Duration)> control_callback,
+  void control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> control_callback,
                bool limit_rate = true,
                double cutoff_frequency = kDefaultCutoffFrequency);
 
@@ -179,8 +179,8 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<Torques(const RobotState&, franka::Duration)> control_callback,
-      std::function<JointPositions(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> control_callback,
+      std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
 
@@ -209,8 +209,8 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<Torques(const RobotState&, franka::Duration)> control_callback,
-      std::function<JointVelocities(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> control_callback,
+      std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
 
@@ -239,8 +239,8 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<Torques(const RobotState&, franka::Duration)> control_callback,
-      std::function<CartesianPose(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> control_callback,
+      std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
 
@@ -268,8 +268,8 @@ class Robot {
    *
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
-  void control(std::function<Torques(const RobotState&, franka::Duration)> control_callback,
-               std::function<CartesianVelocities(const RobotState&, franka::Duration)>
+  void control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> control_callback,
+               std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)>
                    motion_generator_callback,
                bool limit_rate = true,
                double cutoff_frequency = kDefaultCutoffFrequency);
@@ -297,7 +297,7 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<JointPositions(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       ControllerMode controller_mode = ControllerMode::kJointImpedance,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
@@ -325,7 +325,7 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<JointVelocities(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       ControllerMode controller_mode = ControllerMode::kJointImpedance,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
@@ -353,7 +353,7 @@ class Robot {
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
   void control(
-      std::function<CartesianPose(const RobotState&, franka::Duration)> motion_generator_callback,
+      std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_generator_callback,
       ControllerMode controller_mode = ControllerMode::kJointImpedance,
       bool limit_rate = true,
       double cutoff_frequency = kDefaultCutoffFrequency);
@@ -380,7 +380,7 @@ class Robot {
    *
    * @see Robot::Robot to change behavior if realtime priority cannot be set.
    */
-  void control(std::function<CartesianVelocities(const RobotState&, franka::Duration)>
+  void control(std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)>
                    motion_generator_callback,
                ControllerMode controller_mode = ControllerMode::kJointImpedance,
                bool limit_rate = true,
@@ -706,4 +706,4 @@ private:
   emulator::Shared *_shared         = nullptr;
 };
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

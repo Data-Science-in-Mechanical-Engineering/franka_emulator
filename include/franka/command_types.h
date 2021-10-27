@@ -10,7 +10,7 @@
  * Contains types for the commands that can be sent from franka::Robot.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 
 /**
  * Parameters of a cuboid used as virtual wall.
@@ -39,4 +39,4 @@ struct VirtualWallCuboid {
   bool active;
 };
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

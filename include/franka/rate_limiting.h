@@ -11,7 +11,7 @@
  * joint position and joint velocity.
  */
 
-namespace franka {
+namespace FRANKA_EMULATOR_CXX_NAME {
 /**
  * Sample time constant
  */
@@ -285,4 +285,4 @@ std::array<double, 16> limitRate(
     const std::array<double, 6>& last_O_dP_EE_c,    // NOLINT(readability-identifier-naming)
     const std::array<double, 6>& last_O_ddP_EE_c);  // NOLINT(readability-identifier-naming)
 
-}  // namespace franka
+}  // namespace FRANKA_EMULATOR_CXX_NAME

@@ -13,16 +13,16 @@
 #include <iostream>
 #include <stdexcept>
 
-franka::emulator::Plugin::Plugin()
-{
-}
-
-namespace franka
+namespace FRANKA_EMULATOR_CXX_NAME
 {
     class Network{};
 }
 
-void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
+FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Plugin()
+{
+}
+
+void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
 {
     try
     {
@@ -44,44 +44,44 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
 
         //Getting IP
         const char *ip = getenv("FRANKA_EMULATOR_IP");
-        if (ip == nullptr) throw std::runtime_error("franka::emulator::Plugin::Load: FRANKA_EMULATOR_IP is not set");
+        if (ip == nullptr) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: FRANKA_EMULATOR_IP is not set");
         _ip = ip;
 
         //Opening shared memory
         _shared_file = shm_open(("/franka_emulator_" + _ip + "_memory").c_str(), O_CREAT | O_RDWR, 0644);
-        if (_shared_file < 0) throw std::runtime_error("franka::emulator::Robot::Robot: shm_open failed");
-        if (ftruncate(_shared_file, emulator::shared_size) != 0) throw std::runtime_error("franka::emulator::Robot::Robot: ftruncate failed");
+        if (_shared_file < 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: shm_open failed");
+        if (ftruncate(_shared_file, emulator::shared_size) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: ftruncate failed");
         _shared = (emulator::Shared*) mmap(nullptr, emulator::shared_size, PROT_READ | PROT_WRITE, MAP_SHARED, _shared_file, 0);
-        if (_shared == MAP_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: mmap failed");
+        if (_shared == MAP_FAILED) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: mmap failed");
         memset(_shared, 0, emulator::shared_size);
  
         //Opening semaphores
         _plugin_to_robot_mutex = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_mutex").c_str(), O_CREAT, 0644, 1);
-        if (_plugin_to_robot_mutex == SEM_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: sem_open failed");
+        if (_plugin_to_robot_mutex == SEM_FAILED) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: sem_open failed");
         _plugin_to_robot_condition = sem_open(("/franka_emulator_" + _ip + "_plugin_to_robot_condition").c_str(), O_CREAT, 0644, 0);
-        if (_plugin_to_robot_condition == SEM_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: sem_open failed");
+        if (_plugin_to_robot_condition == SEM_FAILED) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: sem_open failed");
         _robot_to_plugin_mutex = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_mutex").c_str(), O_CREAT, 0644, 1);
-        if (_robot_to_plugin_mutex == SEM_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: sem_open failed");
+        if (_robot_to_plugin_mutex == SEM_FAILED) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: sem_open failed");
         _robot_to_plugin_condition = sem_open(("/franka_emulator_" + _ip + "_robot_to_plugin_condition").c_str(), O_CREAT, 0644, 0);
-        if (_robot_to_plugin_condition == SEM_FAILED) throw std::runtime_error("franka::emulator::Robot::Robot: sem_open failed");
+        if (_robot_to_plugin_condition == SEM_FAILED) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Robot::Robot: sem_open failed");
  
         //Creating real-time thread
         struct PthreadAttributes
         {
             pthread_attr_t data;
-            PthreadAttributes() { if (pthread_attr_init(&data) != 0) throw std::runtime_error("franka::emulator::Plugin::Load: pthread_attr_init failed"); }
+            PthreadAttributes() { if (pthread_attr_init(&data) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: pthread_attr_init failed"); }
             ~PthreadAttributes() { pthread_attr_destroy(&data); }
         } pthread_attributes;
-        if (pthread_attr_setschedpolicy(&pthread_attributes.data, SCHED_FIFO) != 0) throw std::runtime_error("franka::emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
+        if (pthread_attr_setschedpolicy(&pthread_attributes.data, SCHED_FIFO) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
         sched_param scheduling_parameters;
         scheduling_parameters.sched_priority = 90;
-        if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw std::runtime_error("franka::emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
-        if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("franka::emulator::Plugin::Load: pthread_attr_setinheritsched failed");
+        if (pthread_attr_setschedparam(&pthread_attributes.data, &scheduling_parameters) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: pthread_attr_setschedpolicy failed");
+        if (pthread_attr_setinheritsched(&pthread_attributes.data, PTHREAD_EXPLICIT_SCHED) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: pthread_attr_setinheritsched failed");
         if (pthread_create(&_real_time_thread, &pthread_attributes.data, [](void* uncasted_plugin) -> void*
         {
             Plugin *plugin = (Plugin*)uncasted_plugin;
-            franka::Network dummy;
-            franka::Model model(dummy);
+            FRANKA_EMULATOR_CXX_NAME::Network dummy;
+            FRANKA_EMULATOR_CXX_NAME::Model model(dummy);
             double previous_torque[7] = { 0, 0, 0, 0, 0, 0, 0 };
             struct timespec time;
             clock_gettime(CLOCK_MONOTONIC, &time);
@@ -128,17 +128,17 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 plugin->_model->GetWorld()->WorldPoseMutex().unlock();
             }
             return nullptr;
-        }, this) != 0) throw std::runtime_error("franka::emulator::Plugin::Load: pthread_create failed");
+        }, this) != 0) throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load: pthread_create failed");
     }
     catch (std::exception &e)
     {
         std::cerr << e.what() << std::endl;
         return;
     }
-    std::cerr << "franka::emulator::Plugin loaded" << std::endl;
+    std::cerr << "FRANKA_EMULATOR_CXX_NAME::emulator::Plugin loaded" << std::endl;
 }
 
-franka::emulator::Plugin::~Plugin()
+FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::~Plugin()
 {
     _finish = true;
     pthread_join(_real_time_thread, nullptr);
@@ -179,5 +179,5 @@ franka::emulator::Plugin::~Plugin()
         _robot_to_plugin_condition = SEM_FAILED;
     }
 
-    std::cerr << "franka::emulator::Plugin unloaded" << std::endl;
+    std::cerr << "FRANKA_EMULATOR_CXX_NAME::emulator::Plugin unloaded" << std::endl;
 }
