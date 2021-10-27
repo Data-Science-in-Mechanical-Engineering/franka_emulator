@@ -7,6 +7,8 @@
 
 #include "robot.h"
 #include "robot_state.h"
+#include <pinocchio/multibody/model.hpp>
+#include <pinocchio/multibody/data.hpp>
 
 /**
  * @file model.h
@@ -275,6 +277,12 @@ class Model {
   Model(const Model&) = delete;
   Model& operator=(const Model&) = delete;
   /// @endcond  
+
+private:
+  size_t _joint_frame_id[7];
+  size_t _link_frame_id[7];
+  pinocchio::Model _model;
+  mutable pinocchio::Data _data;
 };
 
 }  // namespace franka

@@ -17,7 +17,19 @@ set(FRANKA_EMULATOR_VERSION_PATCH 0)
 set(CMAKE_CXX_STANDARD 11)
 
 # gazebo
-find_package(gazebo REQUIRED)
+find_package(gazebo)
+if (NOT gazebo_FOUND)
+	find_package(catkin REQUIRED COMPONENTS gazebo)
+endif()
+
+#pinocchio
+find_package(pinocchio)
+if (NOT pinocchio_FOUND)
+	find_package(catkin REQUIRED COMPONENTS pinocchio)
+endif()
+
+#eigen3
+find_package(Eigen3 REQUIRED)
 
 ###########
 # Library #
@@ -25,17 +37,21 @@ find_package(gazebo REQUIRED)
 
 # franka_plugin
 add_library(franka_plugin SHARED source/plugin.cpp)
-target_compile_definitions(franka_plugin PUBLIC FRANKA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
-target_compile_definitions(franka_plugin PUBLIC FRANKA_VERSION_MINOR=${PROJECT_VERSION_MINOR})
-target_compile_definitions(franka_plugin PUBLIC FRANKA_VERSION_PATCH=${PROJECT_VERSION_PATCH})
-target_compile_definitions(franka_plugin PUBLIC FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
-target_compile_definitions(franka_plugin PUBLIC FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
-target_compile_definitions(franka_plugin PUBLIC FRANKA_EMULATOR_VERSION_PATCH=${FRANKA_EMULATOR_VERSION_PATCH})
-target_include_directories(franka_plugin PRIVATE ${GAZEBO_INCLUDE_DIRS})
-target_link_directories(franka_plugin PRIVATE ${GAZEBO_LIBRARY_DIRS})
-target_link_libraries(franka_plugin PRIVATE ${GAZEBO_LIBRARIES})
-target_link_libraries(franka_plugin PRIVATE rt)
-target_compile_options(franka_plugin PRIVATE ${GAZEBO_CXX_FLAGS})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_VERSION_MINOR=${PROJECT_VERSION_MINOR})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_VERSION_PATCH=${PROJECT_VERSION_PATCH})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
+target_compile_definitions	(franka_plugin PRIVATE FRANKA_EMULATOR_VERSION_PATCH=${FRANKA_EMULATOR_VERSION_PATCH})
+target_include_directories	(franka_plugin PRIVATE ${GAZEBO_INCLUDE_DIRS})
+target_link_directories		(franka_plugin PRIVATE ${GAZEBO_LIBRARY_DIRS})
+target_link_libraries		(franka_plugin PRIVATE ${GAZEBO_LIBRARIES})
+target_compile_options		(franka_plugin PRIVATE ${GAZEBO_CXX_FLAGS})
+target_include_directories	(franka_plugin PRIVATE ${EIGEN3_INCLUDE_DIRS})
+target_include_directories	(franka_plugin PRIVATE ${pinocchio_INCLUDE_DIRS})
+target_link_libraries		(franka_plugin PRIVATE ${pinocchio_LIBRARIES})
+target_link_libraries		(franka_plugin PRIVATE pthread rt)
+
 
 # franka
 add_library(franka SHARED
@@ -54,13 +70,16 @@ source/robot.cpp
 source/robot_state.cpp
 source/vacuum_gripper.cpp
 source/vacuum_gripper_state.cpp)
-target_compile_definitions(franka PUBLIC FRANKA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
-target_compile_definitions(franka PUBLIC FRANKA_VERSION_MINOR=${PROJECT_VERSION_MINOR})
-target_compile_definitions(franka PUBLIC FRANKA_VERSION_PATCH=${PROJECT_VERSION_PATCH})
-target_compile_definitions(franka PUBLIC FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
-target_compile_definitions(franka PUBLIC FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
-target_compile_definitions(franka PUBLIC FRANKA_EMULATOR_VERSION_PATCH=${FRANKA_EMULATOR_VERSION_PATCH})
-target_link_libraries(franka PUBLIC rt)
+target_compile_definitions	(franka PUBLIC FRANKA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
+target_compile_definitions	(franka PUBLIC FRANKA_VERSION_MINOR=${PROJECT_VERSION_MINOR})
+target_compile_definitions	(franka PUBLIC FRANKA_VERSION_PATCH=${PROJECT_VERSION_PATCH})
+target_compile_definitions	(franka PUBLIC FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
+target_compile_definitions	(franka PUBLIC FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
+target_compile_definitions	(franka PUBLIC FRANKA_EMULATOR_VERSION_PATCH=${FRANKA_EMULATOR_VERSION_PATCH})
+target_include_directories	(franka PUBLIC ${EIGEN3_INCLUDE_DIRS})
+target_include_directories	(franka PUBLIC ${pinocchio_INCLUDE_DIRS})
+target_link_libraries		(franka PUBLIC ${pinocchio_LIBRARIES})
+target_link_libraries		(franka PUBLIC pthread rt)
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file("${PROJECT_BINARY_DIR}/FrankaConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY AnyNewerVersion)
 export(TARGETS franka FILE "${PROJECT_BINARY_DIR}/FrankaConfig.cmake")

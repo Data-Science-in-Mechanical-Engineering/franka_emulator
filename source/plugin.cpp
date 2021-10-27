@@ -1,4 +1,5 @@
 #include "../include/franka/emulator/plugin.h"
+#include "../include/franka/model.h"
 #include <gazebo/physics/World.hh>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/Joint.hh>
@@ -14,6 +15,11 @@
 
 franka::emulator::Plugin::Plugin()
 {
+}
+
+namespace franka
+{
+    class Network{};
 }
 
 void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
@@ -74,6 +80,8 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
         if (pthread_create(&_real_time_thread, &pthread_attributes.data, [](void* uncasted_plugin) -> void*
         {
             Plugin *plugin = (Plugin*)uncasted_plugin;
+            franka::Network dummy;
+            franka::Model model(dummy);
             double previous_torque[7] = { 0, 0, 0, 0, 0, 0, 0 };
             struct timespec time;
             clock_gettime(CLOCK_MONOTONIC, &time);
@@ -102,11 +110,13 @@ void franka::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::Elemen
                 if (timeout.tv_nsec > 1000*1000*1000) { timeout.tv_nsec -= 1000*1000*1000; timeout.tv_sec++; }
                 sem_timedwait(plugin->_robot_to_plugin_condition, &timeout);
                 sem_wait(plugin->_robot_to_plugin_mutex);
+                std::array<double, 7> current_torque = model.coriolis(plugin->_shared->robot_state);
                 for (size_t i = 0; i < 7; i++)
                 {
+                    current_torque[i] += plugin->_shared->robot_state.tau_J[i];
                     plugin->_joints[i]->SetForce(0, -previous_torque[i]);
-                    plugin->_joints[i]->SetForce(0, plugin->_shared->robot_state.tau_J[i]);
-                    previous_torque[i] = plugin->_shared->robot_state.tau_J[i];
+                    plugin->_joints[i]->SetForce(0, current_torque[i]);
+                    previous_torque[i] = current_torque[i];
                 }
                 sem_post(plugin->_robot_to_plugin_mutex);
                 /*
