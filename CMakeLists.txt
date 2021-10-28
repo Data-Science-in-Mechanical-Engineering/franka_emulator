@@ -126,7 +126,7 @@ target_link_libraries(${FRANKA_EMULATOR_CMAKE_NAME}_example PRIVATE ${FRANKA_EMU
 set_target_properties(${FRANKA_EMULATOR_CMAKE_NAME}_example PROPERTIES OUTPUT_NAME "${FRANKA_EMULATOR_FILE_NAME}_example")
 
 # selftest
-if (Franka_FOUND AND GTest_FOUND AND NOT "${FRANKA_EMULATOR_CXX_NAME}" EQUAL "franka")
+if (Franka_FOUND AND GTest_FOUND AND NOT "${FRANKA_EMULATOR_CXX_NAME}" STREQUAL "franka")
 	add_executable(${FRANKA_EMULATOR_CMAKE_NAME}_selftest example/selftest.cpp)
 	target_link_libraries		(${FRANKA_EMULATOR_CMAKE_NAME}_selftest PRIVATE ${FRANKA_EMULATOR_CMAKE_NAME})
 	target_include_directories	(${FRANKA_EMULATOR_CMAKE_NAME}_selftest PRIVATE ${GTEST_INCLUDE_DIRS})

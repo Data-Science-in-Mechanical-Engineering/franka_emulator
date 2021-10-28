@@ -59,9 +59,9 @@ std::array<double, 16> FRANKA_EMULATOR_CXX_NAME::Model::pose(
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
-    Eigen::Vector<double, 9> full_q;
-    full_q.block<7, 1>(0, 0) = Eigen::Vector<double, 7>::Map(&q[0]);
-    full_q.block<2, 1>(7, 0) = Eigen::Vector<double, 2>::Zero();
+    Eigen::Matrix<double, 9, 1> full_q;
+    full_q.block<7, 1>(0, 0) = Eigen::Matrix<double, 7, 1>::Map(&q[0]);
+    full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
     pinocchio::forwardKinematics(_model, _data, full_q);
     Eigen::Affine3d transform;
     if (static_cast<size_t>(frame) >= static_cast<size_t>(Frame::kJoint1) && static_cast<size_t>(frame) <= static_cast<size_t>(Frame::kJoint7))
