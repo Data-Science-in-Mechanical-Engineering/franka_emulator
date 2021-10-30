@@ -1,4 +1,4 @@
-#include "../include/franka/gripper.h"
+#include "../include/franka_emulator/gripper.h"
 
 FRANKA_EMULATOR_CXX_NAME::Gripper::Gripper(const std::string& franka_address)
 {}

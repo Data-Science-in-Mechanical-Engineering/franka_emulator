@@ -1,4 +1,4 @@
-#include "../include/franka/rate_limiting.h"
+#include "../include/franka_emulator/rate_limiting.h"
 #include <stddef.h>
 
 std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(

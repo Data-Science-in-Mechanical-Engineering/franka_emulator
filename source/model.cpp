@@ -1,4 +1,4 @@
-#include "../include/franka/model.h"
+#include "../include/franka_emulator/model.h"
 #include <Eigen/Geometry>
 #include <pinocchio/parsers/urdf.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
@@ -7,6 +7,13 @@
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
+#ifndef _GNU_SOURCE
+    #define _GNU_SOURCE
+#endif
+#include <link.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 FRANKA_EMULATOR_CXX_NAME::Frame FRANKA_EMULATOR_CXX_NAME::operator++(Frame& frame, int /* dummy */) noexcept
 {
@@ -15,7 +22,34 @@ FRANKA_EMULATOR_CXX_NAME::Frame FRANKA_EMULATOR_CXX_NAME::operator++(Frame& fram
 
 FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
 {
-    pinocchio::urdf::buildModel("../model/franka.urdf", _model);
+    //Searching for urdf file
+    auto library_search_callback = [](struct dl_phdr_info *info, size_t size, void *data) -> int
+    {
+        if (strstr(info->dlpi_name, "libfranka_emulator.so") != nullptr)
+        {
+            std::string *library_directory = (std::string*)data;
+            library_directory->assign(info->dlpi_name);
+            library_directory->erase(library_directory->find("libfranka_emulator.so"), strlen("libfranka_emulator.so"));
+        }
+        if (strstr(info->dlpi_name, "libfranka_emulator_plugin.so") != nullptr)
+        {
+            std::string *library_directory = (std::string*)data;
+            library_directory->assign(info->dlpi_name);
+            library_directory->erase(library_directory->find("libfranka_emulator_plugin.so"), strlen("libfranka_emulator_plugin.so"));
+        }
+        return 0;
+    };
+    std::string library_directory;
+    dl_iterate_phdr(library_search_callback, &library_directory);
+    if (library_directory == "") throw std::runtime_error("franka_emulator::Model::Model: Could not find library path");
+    struct stat model_stat;
+    if (stat((library_directory + "../model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_directory + "../model/franka.urdf", _model);
+    else if (stat((library_directory + "../share/franka_emulator/model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_directory + "../share/franka_emulator/model/franka.urdf", _model);
+    else throw std::runtime_error("franka_emulator::Model::Model: Could not find model file");
+
+    //Searching joints
     _data = pinocchio::Data(_model);
     for (size_t i = 0; i < 7; i++)
     {
@@ -24,6 +58,7 @@ FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
         _joint_frame_id[i] = _model.getFrameId(name);
     }
 
+    //Searching links
     for (size_t i = 0; i < 7; i++)
     {
         std::string name = "panda_link" + std::to_string(i + 1);

@@ -1,4 +1,4 @@
-#include "../include/franka/vacuum_gripper.h"
+#include "../include/franka_emulator/vacuum_gripper.h"
 
 FRANKA_EMULATOR_CXX_NAME::VacuumGripper::VacuumGripper(const std::string&)
 {}

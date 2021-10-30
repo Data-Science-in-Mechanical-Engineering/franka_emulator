@@ -1,4 +1,4 @@
-#include "../include/franka/model.h"
+#include "../include/franka_emulator/model.h"
 #include <franka/model.h>
 #include <gtest/gtest.h>
 #include <iostream>

@@ -1,4 +1,4 @@
-#include "../include/franka/control_types.h"
+#include "../include/franka_emulator/control_types.h"
 
 FRANKA_EMULATOR_CXX_NAME::Torques::Torques(const std::array<double, 7>& torques) noexcept : tau_J(torques)
 {}

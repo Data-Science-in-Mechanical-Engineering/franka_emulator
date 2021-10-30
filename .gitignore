@@ -40,6 +40,7 @@ Makefile
 CMakeCache.txt
 CMakeFiles/
 
-# franka_o80 #
-##############
+# franka_emulator #
+###################
+include/franka
 build/

@@ -1,9 +1,16 @@
 #!/bin/sh
 if [ $# != 1 ]; then
 	echo 'Usage: franka_emulator.sh <IP>'
-else
-	export GAZEBO_MODEL_PATH=${PROJECT_SOURCE_DIR}
-	export GAZEBO_PLUGIN_PATH=${PROJECT_BINARY_DIR}
+elif [ -f $(pwd)/../share/franka_emulator/model/franka_emulator.world ]; then
+	# Installed
+	export GAZEBO_MODEL_PATH=$(pwd)/../share/franka_emulator
+	export GAZEBO_PLUGIN_PATH=$(pwd)/../lib
 	export FRANKA_EMULATOR_IP=$1
-	gazebo ${PROJECT_SOURCE_DIR}/model/franka_emulator.world -u
+	gazebo $(pwd)/../share/franka_emulator/model/franka_emulator.world -u
+else
+	# Not installed
+	export GAZEBO_MODEL_PATH=@CMAKE_SOURCE_DIR@
+	export GAZEBO_PLUGIN_PATH=$(pwd)
+	export FRANKA_EMULATOR_IP=$1
+	gazebo @CMAKE_SOURCE_DIR@/model/franka_emulator.world -u
 fi

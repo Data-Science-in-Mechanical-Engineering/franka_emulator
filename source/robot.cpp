@@ -1,6 +1,6 @@
-#include "../include/franka/robot.h"
-#include "../include/franka/model.h"
-#include "../include/franka/exception.h"
+#include "../include/franka_emulator/robot.h"
+#include "../include/franka_emulator/model.h"
+#include "../include/franka_emulator/exception.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <pthread.h>

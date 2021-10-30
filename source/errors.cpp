@@ -1,4 +1,4 @@
-#include "../include/franka/errors.h"
+#include "../include/franka_emulator/errors.h"
 
 FRANKA_EMULATOR_CXX_NAME::Errors::Errors() : Errors(std::array<bool, 37>{})
 {}

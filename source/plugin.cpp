@@ -1,5 +1,5 @@
-#include "../include/franka/emulator/plugin.h"
-#include "../include/franka/model.h"
+#include "../include/franka_emulator/emulator/plugin.h"
+#include "../include/franka_emulator/model.h"
 #include <gazebo/physics/World.hh>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/Joint.hh>

@@ -1,4 +1,4 @@
-#include "../include/franka/duration.h"
+#include "../include/franka_emulator/duration.h"
 
 FRANKA_EMULATOR_CXX_NAME::Duration::Duration() noexcept
 {

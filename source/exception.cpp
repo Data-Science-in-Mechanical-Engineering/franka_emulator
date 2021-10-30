@@ -1,4 +1,4 @@
-#include "../include/franka/exception.h"
+#include "../include/franka_emulator/exception.h"
 
 FRANKA_EMULATOR_CXX_NAME::IncompatibleVersionException::IncompatibleVersionException(uint16_t server_version, uint16_t library_version) noexcept :
     server_version(server_version),

@@ -1,4 +1,4 @@
-#include "../include/franka/lowpass_filter.h"
+#include "../include/franka_emulator/lowpass_filter.h"
 
 double FRANKA_EMULATOR_CXX_NAME::lowpassFilter(double sample_time, double y, double y_last, double cutoff_frequency)
 {

@@ -1,5 +1,5 @@
-#include "../include/franka/robot.h"
-#include "../include/franka/model.h"
+#include "../include/franka_emulator/robot.h"
+#include "../include/franka_emulator/model.h"
 #include <iostream>
 
 int _main(int argc, char **argv)
