@@ -68,7 +68,7 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
                 if (plugin->_model->GetWorld()->IsPaused()) continue;
                 plugin->_model->GetWorld()->WorldPoseMutex().lock();
-
+                
                 plugin->_plugin_to_robot_mutex.wait();
                 for (size_t i = 0; i < 7; i++)
                 {
@@ -78,9 +78,11 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
                 plugin->_plugin_to_robot_condition.limitedpost(1);
                 plugin->_plugin_to_robot_mutex.post();
 
+                
                 plugin->_robot_to_plugin_condition.timedwait(_nanosecond_timeout);
                 plugin->_robot_to_plugin_mutex.wait();
-                std::array<double, 7> current_torque = model.coriolis(plugin->_shared.data()->robot_state);
+                
+                std::array<double, 7> current_torque = model.gravity(plugin->_shared.data()->robot_state);
                 for (size_t i = 0; i < 7; i++)
                 {
                     current_torque[i] += plugin->_shared.data()->robot_state.tau_J[i];
@@ -89,12 +91,7 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
                     previous_torque[i] = current_torque[i];
                 }
                 plugin->_robot_to_plugin_mutex.post();
-                /*
-                static const double stiffness[7] = { 600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0 };
-                static const double damping[7] = { 50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0 };
-                static const double target[7] = { 0.0, -M_PI / 4, 0.0, -3 * M_PI / 4, 0.0, M_PI / 2, M_PI / 4 };
-                for (size_t i = 0; i < 7; i++) plugin->_joints[i]->SetForce(0, stiffness[i] * (target[i] - plugin->_joints[i]->Position(0)) - damping[i] * plugin->_joints[i]->GetVelocity(0));
-                */
+                
                 plugin->_model->GetWorld()->WorldPoseMutex().unlock();
             }
             return nullptr;

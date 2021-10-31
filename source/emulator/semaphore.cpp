@@ -55,13 +55,13 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::timedwait(int nsec)
 
 void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::post()
 {
-    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::wait: semaphore was not opened");
+    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::post: semaphore was not opened");
     sem_post(_semaphore);
 }
 
 void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::limitedpost(int limit)
 {
-    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::wait: semaphore was not opened");
+    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::limitedpost: semaphore was not opened");
     int value;
     sem_getvalue(_semaphore, &value);
     if (value < limit) sem_post(_semaphore);
