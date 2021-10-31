@@ -2,18 +2,16 @@
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <string>
-
 #include "emulator/shared.h"
-#include <semaphore.h>
+#include "emulator/semaphore.h"
 #include "command_types.h"
 #include "control_types.h"
 #include "duration.h"
 #include "lowpass_filter.h"
 #include "robot_state.h"
+
+#include <functional>
+#include <string>
 
 /**
  * @file robot.h
@@ -697,13 +695,11 @@ private:
   Callback *_callback           = nullptr;
   void _control();
 
-  std::string _ip                   = "";
-  int _shared_file                  = -1;
-  sem_t *_plugin_to_robot_mutex     = nullptr;
-  sem_t *_plugin_to_robot_condition = nullptr;
-  sem_t *_robot_to_plugin_mutex     = nullptr;
-  sem_t *_robot_to_plugin_condition = nullptr;
-  emulator::Shared *_shared         = nullptr;
+  emulator::Semaphore _plugin_to_robot_mutex;
+  emulator::Semaphore _plugin_to_robot_condition;
+  emulator::Semaphore _robot_to_plugin_mutex;
+  emulator::Semaphore _robot_to_plugin_condition;
+  emulator::Shared _shared;
 };
 
 }  // namespace FRANKA_EMULATOR_CXX_NAME

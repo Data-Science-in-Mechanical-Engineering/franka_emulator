@@ -2,13 +2,13 @@
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 #pragma once
 
-#include <array>
-#include <memory>
-
 #include "robot.h"
 #include "robot_state.h"
+
 #include <pinocchio/multibody/model.hpp>
 #include <pinocchio/multibody/data.hpp>
+#include <array>
+#include <memory>
 
 /**
  * @file model.h

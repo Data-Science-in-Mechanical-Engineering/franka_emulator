@@ -14,7 +14,7 @@
       <include>
         <uri>model://model</uri>
       </include>
-      <plugin name="franka_plugin" filename="libfranka_plugin.so"/>
+      <plugin name="franka_emulator_plugin" filename="libfranka_emulator_plugin.so"/>
     </model>
 
   </world>

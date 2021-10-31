@@ -43,6 +43,8 @@ FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
     dl_iterate_phdr(library_search_callback, &library_directory);
     if (library_directory == "") throw std::runtime_error("franka_emulator::Model::Model: Could not find library path");
     struct stat model_stat;
+    if (stat((library_directory + "model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_directory + "model/franka.urdf", _model);
     if (stat((library_directory + "../model/franka.urdf").c_str(), &model_stat) == 0)
         pinocchio::urdf::buildModel(library_directory + "../model/franka.urdf", _model);
     else if (stat((library_directory + "../share/franka_emulator/model/franka.urdf").c_str(), &model_stat) == 0)
@@ -111,7 +113,7 @@ std::array<double, 16> FRANKA_EMULATOR_CXX_NAME::Model::pose(
         transform.linear() = se3.rotation_impl();
         transform.translation() = se3.translation_impl() + 0.210399 * transform.linear().col(2);
     }
-    else throw std::runtime_error("FRANKA_EMULATOR_CXX_NAME::Model::pose: Unknown frame");
+    else throw std::runtime_error("franka_emulator::Model::pose: Unknown frame");
     std::array<double, 16> result;
     Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
     return result;

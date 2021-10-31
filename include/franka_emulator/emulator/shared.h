@@ -1,17 +1,32 @@
 #pragma once
 
 #include "../robot_state.h"
-#include <pthread.h>
+#include <sys/mman.h>
+#include <string>
 
 namespace FRANKA_EMULATOR_CXX_NAME
 {
     namespace emulator
     {
-        struct Shared
+        struct SharedData
         {
             RobotState robot_state;
         };
 
-        static const size_t shared_size = ((sizeof(Shared) + 4095) / 4096) * 4096;
+        class Shared
+        {
+        private:
+            std::string _name;
+            int _file = -1;
+            void *_data = MAP_FAILED;
+
+        public:
+            Shared();
+            Shared(std::string name, bool create);
+            Shared &operator=(Shared &&other);
+            void close();
+            SharedData *data();
+            ~Shared();
+        };
     }
 }

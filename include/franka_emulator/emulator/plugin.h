@@ -1,4 +1,6 @@
 #include "shared.h"
+#include "semaphore.h"
+#include "thread.h"
 #include <gazebo/gazebo.hh>
 #include <string>
 #include <pthread.h>
@@ -17,14 +19,12 @@ namespace FRANKA_EMULATOR_CXX_NAME
             gazebo::physics::JointPtr _joints[7];
             gazebo::physics::JointPtr _fingers[2];
 
-            std::string _ip                     = "";
-            int _shared_file                    = -1;
-            sem_t *_plugin_to_robot_mutex     = nullptr;
-            sem_t *_plugin_to_robot_condition = nullptr;
-            sem_t *_robot_to_plugin_mutex     = nullptr;
-            sem_t *_robot_to_plugin_condition = nullptr;
-            emulator::Shared *_shared           = nullptr;
-            pthread_t _real_time_thread         = -1;
+            Shared _shared;
+            Semaphore _plugin_to_robot_mutex;
+            Semaphore _plugin_to_robot_condition;
+            Semaphore _robot_to_plugin_mutex;
+            Semaphore _robot_to_plugin_condition;
+            Thread _thread;
 
         public:
             Plugin();
