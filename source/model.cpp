@@ -30,7 +30,7 @@ FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
     } library_search_callback_data;
     auto library_search_callback = [](struct dl_phdr_info *info, size_t size, void *data) -> int
     {
-        const char *library_name = "libfranka_emulator_common.so";
+        const char *library_name = "libfranka_emulator_model.so";
         if (strstr(info->dlpi_name, library_name) != nullptr)
         {
             LibrarySearchCallbackData *library_search_callback_data = (LibrarySearchCallbackData*)data;

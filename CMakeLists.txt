@@ -60,25 +60,33 @@ endif()
 # Library #
 ###########
 
+# franka_emulator_model
+add_library(franka_emulator_model SHARED source/model.cpp)
+target_compile_definitions	(franka_emulator_model PUBLIC FRANKA_EMULATOR_CXX_NAME=${FRANKA_EMULATOR_NAME_LOWERCASE})
+target_include_directories	(franka_emulator_model PUBLIC ${pinocchio_INCLUDE_DIRS})
+target_link_libraries		(franka_emulator_model PUBLIC ${pinocchio_LIBRARIES})
+target_include_directories	(franka_emulator_model PUBLIC ${EIGEN3_INCLUDE_DIRS})
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+	target_compile_options (franka_emulator_model PRIVATE -O3)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+	target_compile_options (franka_emulator_model PRIVATE /O2)
+endif()
+
 # franka_emulator_common
 add_library(franka_emulator_common SHARED
-source/model.cpp
 source/emulator/semaphore.cpp
 source/emulator/shared.cpp
 source/emulator/thread.cpp)
 if (FRANKA_EMULATOR_IMITATE)
 	target_compile_definitions(franka_emulator_common PUBLIC FRANKA_EMULATOR_IMITATE)
 endif()
-target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_CXX_NAME=${FRANKA_EMULATOR_NAME_LOWERCASE})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_VERSION_PATCH=${FRANKA_EMULATOR_VERSION_PATCH})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_VERSION_MINOR=${PROJECT_VERSION_MINOR})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_VERSION_PATCH=${PROJECT_VERSION_PATCH})
-target_include_directories	(franka_emulator_common PUBLIC ${EIGEN3_INCLUDE_DIRS})
-target_include_directories	(franka_emulator_common PUBLIC ${pinocchio_INCLUDE_DIRS})
-target_link_libraries		(franka_emulator_common PUBLIC ${pinocchio_LIBRARIES})
+target_link_libraries		(franka_emulator_common PUBLIC franka_emulator_model)
 target_link_libraries		(franka_emulator_common PUBLIC pthread rt)
 
 # franka_emulator_plugin
@@ -133,12 +141,12 @@ install(FILES ${CMAKE_BINARY_DIR}/franka_emulator.sh DESTINATION bin)
 # export
 add_library						(Franka::${FRANKA_EMULATOR_NAME_UPPERCASE} ALIAS franka_emulator)
 set_target_properties			(franka_emulator PROPERTIES EXPORT_NAME ${FRANKA_EMULATOR_NAME_UPPERCASE})
-export							(TARGETS franka_emulator_common franka_emulator franka_emulator_plugin NAMESPACE Franka:: FILE ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}Targets.cmake)
+export							(TARGETS franka_emulator_model franka_emulator_common franka_emulator franka_emulator_plugin NAMESPACE Franka:: FILE ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}Targets.cmake)
 
 # installation
 configure_package_config_file	(FrankaEmulatorConfig.cmake.in ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}Config.cmake INSTALL_DESTINATION lib/cmake/${FRANKA_EMULATOR_NAME_UPPERCASE})
 write_basic_package_version_file(${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}ConfigVersion.cmake COMPATIBILITY SameMajorVersion)
-install							(TARGETS franka_emulator_common franka_emulator franka_emulator_plugin EXPORT ${FRANKA_EMULATOR_NAME_UPPERCASE}Targets)
+install							(TARGETS franka_emulator_model franka_emulator_common franka_emulator franka_emulator_plugin EXPORT ${FRANKA_EMULATOR_NAME_UPPERCASE}Targets)
 install							(EXPORT ${FRANKA_EMULATOR_NAME_UPPERCASE}Targets NAMESPACE Franka:: DESTINATION lib/cmake/${FRANKA_EMULATOR_NAME_UPPERCASE})
 install							(FILES ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}Config.cmake ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}ConfigVersion.cmake DESTINATION lib/cmake/${FRANKA_EMULATOR_NAME_UPPERCASE})
 install							(DIRECTORY ${PROJECT_SOURCE_DIR}/include/franka_emulator/ DESTINATION include/${FRANKA_EMULATOR_NAME_LOWERCASE})
