@@ -6,7 +6,7 @@ int _main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        std::cout << "Usage: ./franka_example <IP>" << std::endl;
+        std::cout << "Usage: ./franka_emulator_example <IP>" << std::endl;
         return 1;
     }
 

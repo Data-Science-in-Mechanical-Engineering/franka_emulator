@@ -66,6 +66,9 @@ source/model.cpp
 source/emulator/semaphore.cpp
 source/emulator/shared.cpp
 source/emulator/thread.cpp)
+if (FRANKA_EMULATOR_IMITATE)
+	target_compile_definitions(franka_emulator_common PUBLIC FRANKA_EMULATOR_IMITATE)
+endif()
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_CXX_NAME=${FRANKA_EMULATOR_NAME_LOWERCASE})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_VERSION_MAJOR=${FRANKA_EMULATOR_VERSION_MAJOR})
 target_compile_definitions	(franka_emulator_common PUBLIC FRANKA_EMULATOR_VERSION_MINOR=${FRANKA_EMULATOR_VERSION_MINOR})
@@ -110,13 +113,17 @@ add_executable			(franka_emulator_example example/example.cpp)
 target_link_libraries	(franka_emulator_example PRIVATE franka_emulator)
 
 # selftest
-if (Franka_FOUND AND GTest_FOUND AND NOT FRANKA_EMULATOR_IMITATE)
+if (GTest_FOUND)
 	add_executable				(franka_emulator_selftest example/selftest.cpp)
 	target_link_libraries		(franka_emulator_selftest PRIVATE franka_emulator)
+	if (Franka_FOUND)
+		target_compile_definitions(franka_emulator_selftest PRIVATE Franka_FOUND)
+		target_link_libraries	(franka_emulator_selftest PRIVATE Franka::Franka)
+	endif()
 	target_include_directories	(franka_emulator_selftest PRIVATE ${GTEST_INCLUDE_DIRS})
 	target_link_directories		(franka_emulator_selftest PRIVATE ${GTEST_LIBRARY_DIRS})
 	target_link_libraries		(franka_emulator_selftest PRIVATE ${GTEST_LIBRARIES})
-	target_link_libraries		(franka_emulator_selftest PRIVATE Franka::Franka)
+
 endif()
 
 # franka_emulator.sh

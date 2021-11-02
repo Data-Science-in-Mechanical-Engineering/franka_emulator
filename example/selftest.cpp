@@ -1,13 +1,18 @@
 #include "../include/franka_emulator/model.h"
 #include "../include/franka_emulator/emulator/network.h"
-#include <franka/model.h>
+#if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    #include <franka/model.h>
+#endif
 #include <gtest/gtest.h>
 #include <time.h>
 #include <iostream>
 
 static const double relative_tolerance = 0.5;
 static std::string real_ip;
-franka::Model *real_model;
+#if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    franka::Robot *real_robot;
+    franka::Model *real_model;
+#endif
 FRANKA_EMULATOR_CXX_NAME::Model *emulator_model;
 
 int timespec_subtract(timespec &start, timespec &finish)
@@ -25,10 +30,22 @@ TEST(Model, GravityTime)
     //Real gravity
     std::array<double, 7> real_gravity;
     timespec real_start, real_finish;
-    clock_gettime(CLOCK_MONOTONIC, &real_start);
-    EXPECT_NO_THROW(real_gravity = real_model->gravity(q, m, F));
-    clock_gettime(CLOCK_MONOTONIC, &real_finish);
-    std::cout << "Real gravity computed in " << timespec_subtract(real_start, real_finish) << "ns" << std::endl;
+    if (real_ip == "")
+    {
+        real_start.tv_sec = 0;
+        real_start.tv_nsec = 0;
+        real_finish.tv_sec = 0;
+        real_finish.tv_nsec = 62217; //Intel(R) Xeon(R) W-2123 CPU @ 3.60GHz
+    }
+    #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    else
+    {
+        clock_gettime(CLOCK_MONOTONIC, &real_start);
+        EXPECT_NO_THROW(real_gravity = real_model->gravity(q, m, F));
+        clock_gettime(CLOCK_MONOTONIC, &real_finish);
+    }
+    #endif
+    std::cout << "Real gravity computed in " << 0.001 * timespec_subtract(real_start, real_finish) << "us" << std::endl;
     
     //Emulator gravity
     std::array<double, 7> emulator_gravity;
@@ -36,7 +53,7 @@ TEST(Model, GravityTime)
     clock_gettime(CLOCK_MONOTONIC, &emulator_start);
     EXPECT_NO_THROW(emulator_gravity = emulator_model->gravity(q, m, F));
     clock_gettime(CLOCK_MONOTONIC, &emulator_finish);
-    std::cout << "Emulator gravity computed in " << timespec_subtract(emulator_start, emulator_finish) << "ns" << std::endl;
+    std::cout << "Emulator gravity computed in " << 0.001 * timespec_subtract(emulator_start, emulator_finish) << "us" << std::endl;
 
     EXPECT_LE(timespec_subtract(emulator_start, emulator_finish), 1000*1000);
 }
@@ -49,7 +66,10 @@ TEST(Model, GravityAccuracy)
     
     //Real gravity
     std::array<double, 7> real_gravity;
-    EXPECT_NO_THROW(real_gravity = real_model->gravity(q, m, F));
+    if (real_ip == "") real_gravity = { 0, -1.73553, -0.670751, 18.5229, 0.715627, 1.67152, 2.45449e-18 };
+    #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    else EXPECT_NO_THROW(real_gravity = real_model->gravity(q, m, F));
+    #endif
     std::cout << "Real gravity    :"; for (size_t i = 0; i < 7; i++) std::cout << " " << real_gravity[i]; std::cout << std::endl;
     
     //Emulator gravity
@@ -77,10 +97,22 @@ TEST(Model, CoriolisTime)
     //Real coriolis
     std::array<double, 7> real_coriolis;
     timespec real_start, real_finish;
-    clock_gettime(CLOCK_MONOTONIC, &real_start);
-    EXPECT_NO_THROW(real_coriolis = real_model->coriolis(q, dq, I, m, F));
-    clock_gettime(CLOCK_MONOTONIC, &real_finish);
-    std::cout << "Real coriolis computed in " << timespec_subtract(real_start, real_finish) << "ns" << std::endl;
+    if (real_ip == "")
+    {
+        real_start.tv_sec = 0;
+        real_start.tv_nsec = 0;
+        real_finish.tv_sec = 0;
+        real_finish.tv_nsec = 18203; //Intel(R) Xeon(R) W-2123 CPU @ 3.60GHz
+    }
+    #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    else
+    {
+        clock_gettime(CLOCK_MONOTONIC, &real_start);
+        EXPECT_NO_THROW(real_coriolis = real_model->coriolis(q, dq, I, m, F));
+        clock_gettime(CLOCK_MONOTONIC, &real_finish);
+    }
+    #endif
+    std::cout << "Real coriolis computed in " << 0.001 * timespec_subtract(real_start, real_finish) << "us" << std::endl;
     
     //Emulator coriolis
     std::array<double, 7> emulator_coriolis;
@@ -88,7 +120,7 @@ TEST(Model, CoriolisTime)
     clock_gettime(CLOCK_MONOTONIC, &emulator_start);
     EXPECT_NO_THROW(emulator_coriolis = emulator_model->coriolis(q, dq, I, m, F));
     clock_gettime(CLOCK_MONOTONIC, &emulator_finish);
-    std::cout << "Emulator coriolis computed in " << timespec_subtract(emulator_start, emulator_finish) << "ns" << std::endl;
+    std::cout << "Emulator coriolis computed in " << 0.001 * timespec_subtract(emulator_start, emulator_finish) << "us" << std::endl;
 
     EXPECT_LE(timespec_subtract(emulator_start, emulator_finish), 1000*1000);
 }
@@ -103,7 +135,10 @@ TEST(Model, CoriolisAccuracy)
 
     //Real coriolis
     std::array<double, 7> real_coriolis;
-    EXPECT_NO_THROW(real_coriolis = real_model->coriolis(q, dq, I, m, F));
+    if (real_ip == "") real_coriolis = { -0.0530698, -0.126959, -0.107617, -0.0264719, -0.00944426, -0.0130887, -0.000418606 };
+    #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+    else EXPECT_NO_THROW(real_coriolis = real_model->coriolis(q, dq, I, m, F));
+    #endif
     std::cout << "Real coriolis    :"; for (size_t i = 0; i < 7; i++) std::cout << " " << real_coriolis[i]; std::cout << std::endl;
 
     //Emulator coriolis
@@ -123,11 +158,28 @@ TEST(Model, CoriolisAccuracy)
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);
+    if (argc == 1) real_ip = "";    
+    #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
+        else if (argc == 2)
+        {
+            real_ip = argv[1];
+            real_robot = new franka::Robot(real_ip);
+            real_model = new franka::Model(real_robot->loadModel());
+        }
+        else
+        {
+            std::cout << "Usage:" << std::endl;
+            std::cout << "./franka_emulator_selftest      - to test against recorded values" << std::endl;
+            std::cout << "./franka_emulator_selftest <IP> - to test against libfranka" << std::endl;
+        }
+    #else
+        else
+        {
+            std::cout << "Usage:" << std::endl;
+            std::cout << "./franka_emulator_selftest      - to test against recorded values" << std::endl;
+        }
+    #endif
     
-    std::cout << "Enter real robot IP: ";
-    std::getline(std::cin, real_ip);
-    franka::Robot real_robot(real_ip);
-    real_model = new franka::Model(real_robot.loadModel());
     FRANKA_EMULATOR_CXX_NAME::Network emulator_network;
     emulator_model = new FRANKA_EMULATOR_CXX_NAME::Model(emulator_network);
 
