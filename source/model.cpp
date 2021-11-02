@@ -23,32 +23,32 @@ FRANKA_EMULATOR_CXX_NAME::Frame FRANKA_EMULATOR_CXX_NAME::operator++(Frame& fram
 FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
 {
     //Searching for urdf file
+    struct LibrarySearchCallbackData
+    {
+        bool found              = false;
+        std::string directory   = "";
+    } library_search_callback_data;
     auto library_search_callback = [](struct dl_phdr_info *info, size_t size, void *data) -> int
     {
-        if (strstr(info->dlpi_name, "libfranka_emulator.so") != nullptr)
+        const char *library_name = "libfranka_emulator_common.so";
+        if (strstr(info->dlpi_name, library_name) != nullptr)
         {
-            std::string *library_directory = (std::string*)data;
-            library_directory->assign(info->dlpi_name);
-            library_directory->erase(library_directory->find("libfranka_emulator.so"), strlen("libfranka_emulator.so"));
-        }
-        if (strstr(info->dlpi_name, "libfranka_emulator_plugin.so") != nullptr)
-        {
-            std::string *library_directory = (std::string*)data;
-            library_directory->assign(info->dlpi_name);
-            library_directory->erase(library_directory->find("libfranka_emulator_plugin.so"), strlen("libfranka_emulator_plugin.so"));
+            LibrarySearchCallbackData *library_search_callback_data = (LibrarySearchCallbackData*)data;
+            library_search_callback_data->found = true;
+            library_search_callback_data->directory.assign(info->dlpi_name);
+            library_search_callback_data->directory.erase(library_search_callback_data->directory.find(library_name), strlen(library_name));
         }
         return 0;
     };
-    std::string library_directory;
-    dl_iterate_phdr(library_search_callback, &library_directory);
-    if (library_directory == "") throw std::runtime_error("franka_emulator::Model::Model: Could not find library path");
+    dl_iterate_phdr(library_search_callback, &library_search_callback_data);
+    if (!library_search_callback_data.found) throw std::runtime_error("franka_emulator::Model::Model: Could not find library path");
     struct stat model_stat;
-    if (stat((library_directory + "model/franka.urdf").c_str(), &model_stat) == 0)
-        pinocchio::urdf::buildModel(library_directory + "model/franka.urdf", _model);
-    if (stat((library_directory + "../model/franka.urdf").c_str(), &model_stat) == 0)
-        pinocchio::urdf::buildModel(library_directory + "../model/franka.urdf", _model);
-    else if (stat((library_directory + "../share/franka_emulator/model/franka.urdf").c_str(), &model_stat) == 0)
-        pinocchio::urdf::buildModel(library_directory + "../share/franka_emulator/model/franka.urdf", _model);
+    if (stat((library_search_callback_data.directory + "model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_search_callback_data.directory + "model/franka.urdf", _model);
+    if (stat((library_search_callback_data.directory + "../model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_search_callback_data.directory + "../model/franka.urdf", _model);
+    else if (stat((library_search_callback_data.directory + "../share/franka_emulator/model/franka.urdf").c_str(), &model_stat) == 0)
+        pinocchio::urdf::buildModel(library_search_callback_data.directory + "../share/franka_emulator/model/franka.urdf", _model);
     else throw std::runtime_error("franka_emulator::Model::Model: Could not find model file");
 
     //Searching joints
