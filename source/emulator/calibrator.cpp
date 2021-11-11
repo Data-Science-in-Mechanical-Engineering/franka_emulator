@@ -69,14 +69,6 @@ int _main(int argc, char **argv)
     else if (stat("../model/franka.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("../model/franka.urdf", emulator_model);
     else throw std::runtime_error("Could not find model file");
     pinocchio::Data emulator_data(emulator_model);
-    int nframes[7];
-    for (int nframe = 0; nframe < emulator_model.frames.size(); nframe++)
-    {
-        for (int link = 0; link < 7; link++)
-        {
-            if (emulator_model.frames[nframe].name == ("panda_link" + std::to_string(link + 1))) nframes[nframes[link]] = nframe;
-        }
-    }
 
     //Generating test cases
     std::vector<GravityCase> gravity_cases;
@@ -125,9 +117,9 @@ int _main(int argc, char **argv)
     Eigen::VectorXd parameters(7*nparameters); //7 links * (mass + 6 inertia + 3 position)
     for (unsigned int link = 0; link < 7; link++)
     {
-        parameters(nparameters*link + mass0) = emulator_model.frames[nframes[link]].inertia.mass();
-        for (unsigned int inertia = 0; inertia < 6; inertia++) parameters(nparameters*link + inertia0 + inertia) = emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia];
-        for (unsigned int position = 0; position < 3; position++) parameters(nparameters*link + position0 + position) = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
+        parameters(nparameters*link + mass0) = emulator_model.inertias[link+1].mass();
+        for (unsigned int inertia = 0; inertia < 6; inertia++) parameters(nparameters*link + inertia0 + inertia) = emulator_model.inertias[link+1].inertia().data()[inertia];
+        for (unsigned int position = 0; position < 3; position++) parameters(nparameters*link + position0 + position) = emulator_model.inertias[link+1].lever()[position];
     }
 
     //Run Newton method
@@ -164,13 +156,13 @@ int _main(int argc, char **argv)
             for (unsigned int link = 0; link < 7; link++)
             {
                 const double mass_epsillon = 0.1;
-                double previous_mass = emulator_model.frames[nframes[link]].inertia.mass();
+                double previous_mass = emulator_model.inertias[link+1].mass();
                 emulator_model.gravity.linear_impl() = gravity_cases[cas].g;
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass + mass_epsillon;
+                emulator_model.inertias[link+1].mass() = previous_mass + mass_epsillon;
                 Eigen::Matrix<double, 7, 1> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass - mass_epsillon;
+                emulator_model.inertias[link+1].mass() = previous_mass - mass_epsillon;
                 Eigen::Matrix<double, 7, 1> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass;
+                emulator_model.inertias[link+1].mass() = previous_mass;
                 derivative.block<7,1>(gravity_error0 + 7*cas, nparameters*link + mass0) = (upper - lower) / (2 * mass_epsillon);
             }
 
@@ -180,13 +172,13 @@ int _main(int argc, char **argv)
                 for (unsigned int position = 0; position < 3; position++)
                 {
                     const double position_epsillon = 0.1;
-                    double previous_position = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
+                    double previous_position = emulator_model.inertias[link+1].lever()[position];
                     emulator_model.gravity.linear_impl() = gravity_cases[cas].g;
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position + position_epsillon;
+                    emulator_model.inertias[link+1].lever()[position] = previous_position + position_epsillon;
                     Eigen::Matrix<double, 7, 1> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position - position_epsillon;
+                    emulator_model.inertias[link+1].lever()[position] = previous_position - position_epsillon;
                     Eigen::Matrix<double, 7, 1> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position;
+                    emulator_model.inertias[link+1].lever()[position] = previous_position;
                     derivative.block<7,1>(gravity_error0 + 7*cas, nparameters*link + position0 + position) = (upper - lower) / (2 * position_epsillon);
                 }
         
@@ -195,14 +187,14 @@ int _main(int argc, char **argv)
             for (unsigned int link = 0; link < 7; link++)
             {
                 const double mass_epsillon = 0.1;
-                double previous_mass = emulator_model.frames[nframes[link]].inertia.mass();
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass + mass_epsillon;
+                double previous_mass = emulator_model.inertias[link+1].mass();
+                emulator_model.inertias[link+1].mass() = previous_mass + mass_epsillon;
                 Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                 Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass - mass_epsillon;
+                emulator_model.inertias[link+1].mass() = previous_mass - mass_epsillon;
                 Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                 Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
-                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass;
+                emulator_model.inertias[link+1].mass() = previous_mass;
                 derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + mass0) = (upper - lower) / (2 * mass_epsillon);
             }
 
@@ -212,14 +204,14 @@ int _main(int argc, char **argv)
                 for (unsigned int inertia = 0; inertia < 6; inertia++)
                 {
                     const double inertia_epsillon = 0.1;
-                    double previous_inertia = emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia];
-                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia + inertia_epsillon;
+                    double previous_inertia = emulator_model.inertias[link+1].inertia().data()[inertia];
+                    emulator_model.inertias[link+1].inertia().data()[inertia] = previous_inertia + inertia_epsillon;
                     Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                     Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia - inertia_epsillon;
+                    emulator_model.inertias[link+1].inertia().data()[inertia] = previous_inertia - inertia_epsillon;
                     Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                     Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia;
+                    emulator_model.inertias[link+1].inertia().data()[inertia] = previous_inertia;
                     derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + inertia0 + inertia) = (upper - lower) / (2 * inertia_epsillon);
                 }
         
@@ -229,14 +221,14 @@ int _main(int argc, char **argv)
                 for (unsigned int position = 0; position < 3; position++)
                 {
                     const double position_epsillon = 0.1;
-                    double previous_position = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position + position_epsillon;
+                    double previous_position = emulator_model.inertias[link+1].lever()[position];
+                    emulator_model.inertias[link+1].lever()[position] = previous_position + position_epsillon;
                     Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                     Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position - position_epsillon;
+                    emulator_model.inertias[link+1].lever()[position] = previous_position - position_epsillon;
                     Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
                     Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position;
+                    emulator_model.inertias[link+1].lever()[position] = previous_position;
                     derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + position0 + position) = (upper - lower) / (2 * position_epsillon);
                 }
         
@@ -246,9 +238,9 @@ int _main(int argc, char **argv)
         std::cout << "Applying parameters" << std::endl;
         for (unsigned int link = 0; link < 7; link++)
         {
-            emulator_model.frames[nframes[link]].inertia.mass() = parameters(nparameters*link + mass0);
-            for (unsigned int inertia = 0; inertia < 6; inertia++) emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = parameters(nparameters*link + inertia0 + inertia);
-            for (unsigned int position = 0; position < 3; position++) emulator_model.frames[nframes[link]].placement.translation_impl()[position] = parameters(nparameters*link + position0 + position);
+            emulator_model.inertias[link+1].mass() = parameters(nparameters*link + mass0);
+            for (unsigned int inertia = 0; inertia < 6; inertia++) emulator_model.inertias[link+1].inertia().data()[inertia] = parameters(nparameters*link + inertia0 + inertia);
+            for (unsigned int position = 0; position < 3; position++) emulator_model.inertias[link+1].lever()[position] = parameters(nparameters*link + position0 + position);
         }
     }
 
