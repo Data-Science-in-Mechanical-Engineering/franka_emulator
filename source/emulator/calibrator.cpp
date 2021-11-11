@@ -11,43 +11,43 @@
 
 struct GravityCase
 {
-    Eigen::Vector<double, 7> q = Eigen::Vector<double, 7>::Zero();
-    Eigen::Vector<double, 3> g = Eigen::Vector<double, 3>::Zero();
-    Eigen::Vector<double, 7> gravity = Eigen::Vector<double, 7>::Zero();
+    Eigen::Matrix<double, 7, 1> q = Eigen::Matrix<double, 7, 1>::Zero();
+    Eigen::Matrix<double, 3, 1> g = Eigen::Matrix<double, 3, 1>::Zero();
+    Eigen::Matrix<double, 7, 1> gravity = Eigen::Matrix<double, 7, 1>::Zero();
 };
 
 struct CoriolisCase
 {
-    Eigen::Vector<double, 7> q = Eigen::Vector<double, 7>::Zero();
-    Eigen::Vector<double, 7> dq = Eigen::Vector<double, 7>::Zero();
-    Eigen::Vector<double, 7> coriolis = Eigen::Vector<double, 7>::Zero();
+    Eigen::Matrix<double, 7, 1> q = Eigen::Matrix<double, 7, 1>::Zero();
+    Eigen::Matrix<double, 7, 1> dq = Eigen::Matrix<double, 7, 1>::Zero();
+    Eigen::Matrix<double, 7, 1> coriolis = Eigen::Matrix<double, 7, 1>::Zero();
 };
 
-Eigen::Vector<double, 9> extend(const Eigen::Vector<double, 7> &v)
+Eigen::Matrix<double, 9, 1> extend(const Eigen::Matrix<double, 7, 1> &v)
 {
-    Eigen::Vector<double, 9> r;
+    Eigen::Matrix<double, 9, 1> r;
     r.block<7,1>(0,0) = v;
-    r.block<2,1>(7,0) = Eigen::Vector<double, 2>::Zero();
+    r.block<2,1>(7,0) = Eigen::Matrix<double, 2, 1>::Zero();
     return r;
 }
 
-std::array<double, 3> array(const Eigen::Vector<double, 3> &v)
+std::array<double, 3> array(const Eigen::Matrix<double, 3, 1> &v)
 {
     std::array<double, 3> r;
-    Eigen::Vector<double, 3>::Map(&r[0]) = v;
+    Eigen::Matrix<double, 3, 1>::Map(&r[0]) = v;
     return r;
 }
 
-std::array<double, 7> array(const Eigen::Vector<double, 7> &v)
+std::array<double, 7> array(const Eigen::Matrix<double, 7, 1> &v)
 {
     std::array<double, 7> r;
-    Eigen::Vector<double, 7>::Map(&r[0]) = v;
+    Eigen::Matrix<double, 7, 1>::Map(&r[0]) = v;
     return r;
 }
 
-Eigen::Vector<double, 7> vector(const std::array<double, 7> &v)
+Eigen::Matrix<double, 7, 1> vector(const std::array<double, 7> &v)
 {
-    return Eigen::Vector<double, 7>::Map(&v[0]);
+    return Eigen::Matrix<double, 7, 1>::Map(&v[0]);
 }
 
 int _main(int argc, char **argv)
@@ -69,6 +69,14 @@ int _main(int argc, char **argv)
     else if (stat("../model/franka.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("../model/franka.urdf", emulator_model);
     else throw std::runtime_error("Could not find model file");
     pinocchio::Data emulator_data(emulator_model);
+    int nframes[7];
+    for (int nframe = 0; nframe < emulator_model.frames.size(); nframe++)
+    {
+        for (int link = 0; link < 7; link++)
+        {
+            if (emulator_model.frames[nframe].name == ("panda_link" + std::to_string(link + 1))) nframes[nframes[link]] = nframe;
+        }
+    }
 
     //Generating test cases
     std::vector<GravityCase> gravity_cases;
@@ -83,7 +91,7 @@ int _main(int argc, char **argv)
     for (int j5 = -1; j5 <= 1; j5++)
     for (int j6 = -1; j6 <= 1; j6++)
     {
-        Eigen::Vector<double, 7> q;
+        Eigen::Matrix<double, 7, 1> q;
         q(0) = j0 * M_PI / 2;
         q(1) = j1 * M_PI / 2;
         q(2) = j2 * M_PI / 2;
@@ -113,13 +121,13 @@ int _main(int argc, char **argv)
     const unsigned int nparameters = 10;
     const unsigned int mass0 = 0;
     const unsigned int inertia0 = 1;
-    const unsigned int position0 = 8;
+    const unsigned int position0 = 7;
     Eigen::VectorXd parameters(7*nparameters); //7 links * (mass + 6 inertia + 3 position)
     for (unsigned int link = 0; link < 7; link++)
     {
-        parameters(nparameters*link + mass0) = emulator_model.frames[link].inertia.mass();
-        for (unsigned int inertia = 0; inertia < 6; inertia++) parameters(nparameters*link + inertia0 + inertia) = emulator_model.frames[link].inertia.inertia().data()[inertia];
-        for (unsigned int position = 0; position < 3; position++) parameters(nparameters*link + position0 + position) = emulator_model.frames[link].placement.translation_impl()[position];
+        parameters(nparameters*link + mass0) = emulator_model.frames[nframes[link]].inertia.mass();
+        for (unsigned int inertia = 0; inertia < 6; inertia++) parameters(nparameters*link + inertia0 + inertia) = emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia];
+        for (unsigned int position = 0; position < 3; position++) parameters(nparameters*link + position0 + position) = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
     }
 
     //Run Newton method
@@ -133,111 +141,114 @@ int _main(int argc, char **argv)
     {
         //Computing error
         std::cout << "Calibration step " << step << std::endl;
+        std::cout << "Computing error of gravity()" << std::endl;
         for (unsigned int cas = 0; cas < gravity_cases.size(); cas++)
         {
             emulator_model.gravity.linear_impl() = gravity_cases[cas].g;
-            Eigen::Vector<double, 7> emulator_gravity = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
+            Eigen::Matrix<double, 7, 1> emulator_gravity = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
             error.block<7,1>(gravity_error0 + 7*cas,0) = emulator_gravity - gravity_cases[cas].gravity;
         }
+        std::cout << "Computing error of coriolis()" << std::endl;
         for (unsigned int cas = 0; cas < coriolis_cases.size(); cas++)
         {
             Eigen::Matrix<double, 7, 7> emulator_coriolis_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-            Eigen::Vector<double, 7> emulator_coriolis = emulator_coriolis_matrix * coriolis_cases[cas].dq;
+            Eigen::Matrix<double, 7, 1> emulator_coriolis = emulator_coriolis_matrix * coriolis_cases[cas].dq;
             error.block<7,1>(coriolis_error0 + 7*cas,0) = emulator_coriolis - coriolis_cases[cas].coriolis;
         }
         std::cout << "Error norm: " << error.norm() << std::endl;
-        if (error.norm() < 0.001) break;
+        if (error.norm() < 1.0) break;
 
         //Computing derivative
+        std::cout << "Computing derivative of gravity() in mass" << std::endl;
         for (unsigned int cas = 0; cas < gravity_cases.size(); cas++)
-        {
             for (unsigned int link = 0; link < 7; link++)
             {
                 const double mass_epsillon = 0.1;
-                double previous_mass = emulator_model.frames[cas].inertia.mass();
+                double previous_mass = emulator_model.frames[nframes[link]].inertia.mass();
                 emulator_model.gravity.linear_impl() = gravity_cases[cas].g;
-                emulator_model.frames[cas].inertia.mass() = previous_mass + mass_epsillon;
-                Eigen::Vector<double, 7> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q));
-                emulator_model.frames[cas].inertia.mass() = previous_mass - mass_epsillon;
-                Eigen::Vector<double, 7> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q));
-                emulator_model.frames[cas].inertia.mass() = previous_mass;
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass + mass_epsillon;
+                Eigen::Matrix<double, 7, 1> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass - mass_epsillon;
+                Eigen::Matrix<double, 7, 1> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass;
                 derivative.block<7,1>(gravity_error0 + 7*cas, nparameters*link + mass0) = (upper - lower) / (2 * mass_epsillon);
             }
 
+        std::cout << "Computing derivative of gravity() in position" << std::endl;
+        for (unsigned int cas = 0; cas < gravity_cases.size(); cas++)
             for (unsigned int link = 0; link < 7; link++)
-            {
                 for (unsigned int position = 0; position < 3; position++)
                 {
                     const double position_epsillon = 0.1;
-                    double previous_position = emulator_model.frames[link].placement.translation_impl()[position];
+                    double previous_position = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
                     emulator_model.gravity.linear_impl() = gravity_cases[cas].g;
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position + position_epsillon;
-                    Eigen::Vector<double, 7> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q));
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position - position_epsillon;
-                    Eigen::Vector<double, 7> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q));
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position;
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position + position_epsillon;
+                    Eigen::Matrix<double, 7, 1> upper = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position - position_epsillon;
+                    Eigen::Matrix<double, 7, 1> lower = pinocchio::computeGeneralizedGravity(emulator_model, emulator_data, extend(gravity_cases[cas].q)).block<7,1>(0,0);
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position;
                     derivative.block<7,1>(gravity_error0 + 7*cas, nparameters*link + position0 + position) = (upper - lower) / (2 * position_epsillon);
                 }
-            }
-        }
+        
+        std::cout << "Computing derivative of coriolis() in mass" << std::endl;
         for (unsigned int cas = 0; cas < coriolis_cases.size(); cas++)
-        {
             for (unsigned int link = 0; link < 7; link++)
             {
                 const double mass_epsillon = 0.1;
-                double previous_mass = emulator_model.frames[cas].inertia.mass();
-                emulator_model.frames[cas].inertia.mass() = previous_mass + mass_epsillon;
+                double previous_mass = emulator_model.frames[nframes[link]].inertia.mass();
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass + mass_epsillon;
                 Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                Eigen::Vector<double, 7> upper = upper_matrix * coriolis_cases[cas].dq;
-                emulator_model.frames[cas].inertia.mass() = previous_mass - mass_epsillon;
+                Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass - mass_epsillon;
                 Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                Eigen::Vector<double, 7> lower = upper_matrix * coriolis_cases[cas].dq;
-                emulator_model.frames[cas].inertia.mass() = previous_mass;
+                Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
+                emulator_model.frames[nframes[link]].inertia.mass() = previous_mass;
                 derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + mass0) = (upper - lower) / (2 * mass_epsillon);
             }
 
+        std::cout << "Computing derivative of coriolis() in inertia" << std::endl;
+        for (unsigned int cas = 0; cas < coriolis_cases.size(); cas++)
             for (unsigned int link = 0; link < 7; link++)
-            {
                 for (unsigned int inertia = 0; inertia < 6; inertia++)
                 {
                     const double inertia_epsillon = 0.1;
-                    double previous_inertia = emulator_model.frames[link].inertia.inertia().data()[inertia];
-                    emulator_model.frames[link].inertia.inertia().data()[inertia] = previous_inertia + inertia_epsillon;
+                    double previous_inertia = emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia];
+                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia + inertia_epsillon;
                     Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                    Eigen::Vector<double, 7> upper = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[link].inertia.inertia().data()[inertia] = previous_inertia - inertia_epsillon;
+                    Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
+                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia - inertia_epsillon;
                     Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                    Eigen::Vector<double, 7> lower = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[link].inertia.inertia().data()[inertia] = previous_inertia;
+                    Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
+                    emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = previous_inertia;
                     derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + inertia0 + inertia) = (upper - lower) / (2 * inertia_epsillon);
                 }
-            }
-
+        
+        std::cout << "Computing derivative of coriolis() in position" << std::endl;
+        for (unsigned int cas = 0; cas < coriolis_cases.size(); cas++)
             for (unsigned int link = 0; link < 7; link++)
-            {
                 for (unsigned int position = 0; position < 3; position++)
                 {
                     const double position_epsillon = 0.1;
-                    double previous_position = emulator_model.frames[link].placement.translation_impl()[position];
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position + position_epsillon;
+                    double previous_position = emulator_model.frames[nframes[link]].placement.translation_impl()[position];
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position + position_epsillon;
                     Eigen::Matrix<double, 7, 7> upper_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                    Eigen::Vector<double, 7> upper = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position - position_epsillon;
+                    Eigen::Matrix<double, 7, 1> upper = upper_matrix * coriolis_cases[cas].dq;
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position - position_epsillon;
                     Eigen::Matrix<double, 7, 7> lower_matrix = pinocchio::computeCoriolisMatrix(emulator_model, emulator_data, extend(coriolis_cases[cas].q), extend(coriolis_cases[cas].dq)).block<7,7>(0,0);
-                    Eigen::Vector<double, 7> lower = upper_matrix * coriolis_cases[cas].dq;
-                    emulator_model.frames[link].placement.translation_impl()[position] = previous_position;
+                    Eigen::Matrix<double, 7, 1> lower = upper_matrix * coriolis_cases[cas].dq;
+                    emulator_model.frames[nframes[link]].placement.translation_impl()[position] = previous_position;
                     derivative.block<7,1>(coriolis_error0 + 7*cas, nparameters*link + position0 + position) = (upper - lower) / (2 * position_epsillon);
                 }
-            }
-        }
         
         //Updating parameters
+        std::cout << "Computing parameters for next step" << std::endl;
         parameters -= derivative.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(error);
+        std::cout << "Applying parameters" << std::endl;
         for (unsigned int link = 0; link < 7; link++)
         {
-            emulator_model.frames[link].inertia.mass() = parameters(nparameters*link + mass0);
-            for (unsigned int inertia = 0; inertia < 6; inertia++) emulator_model.frames[link].inertia.inertia().data()[inertia] = parameters(nparameters*link + inertia0 + inertia);
-            for (unsigned int position = 0; position < 3; position++) emulator_model.frames[link].placement.translation_impl()[position] = parameters(nparameters*link + position0 + position);
+            emulator_model.frames[nframes[link]].inertia.mass() = parameters(nparameters*link + mass0);
+            for (unsigned int inertia = 0; inertia < 6; inertia++) emulator_model.frames[nframes[link]].inertia.inertia().data()[inertia] = parameters(nparameters*link + inertia0 + inertia);
+            for (unsigned int position = 0; position < 3; position++) emulator_model.frames[nframes[link]].placement.translation_impl()[position] = parameters(nparameters*link + position0 + position);
         }
     }
 
