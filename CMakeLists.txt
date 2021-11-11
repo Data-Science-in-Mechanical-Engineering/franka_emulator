@@ -97,6 +97,21 @@ target_link_directories		(franka_emulator_plugin PRIVATE ${GAZEBO_LIBRARY_DIRS})
 target_link_libraries		(franka_emulator_plugin PRIVATE ${GAZEBO_LIBRARIES})
 target_compile_options		(franka_emulator_plugin PRIVATE ${GAZEBO_CXX_FLAGS})
 
+# franka_emulator_calibrator
+if (Franka_FOUND)
+	add_executable(franka_emulator_calibrator source/emulator/calibrator.cpp)
+	target_link_libraries		(franka_emulator_calibrator PRIVATE franka_emulator_common)
+	target_link_libraries		(franka_emulator_calibrator PRIVATE Franka::Franka)
+	target_include_directories	(franka_emulator_calibrator PRIVATE ${pinocchio_INCLUDE_DIRS})
+	target_link_libraries		(franka_emulator_calibrator PRIVATE ${pinocchio_LIBRARIES})
+	target_include_directories	(franka_emulator_calibrator PRIVATE ${EIGEN3_INCLUDE_DIRS})
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+		target_compile_options (franka_emulator_calibrator PRIVATE -O3)
+	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		target_compile_options (franka_emulator_calibrator PRIVATE /O2)
+	endif()
+endif()
+
 # franka_emulator
 add_library(franka_emulator SHARED
 source/control_tools.cpp
