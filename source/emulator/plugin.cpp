@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <sched.h>
-
 #include <unistd.h>
 #include <iostream>
 #include <stdexcept>
@@ -59,16 +58,22 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
             FRANKA_EMULATOR_CXX_NAME::Network dummy;
             FRANKA_EMULATOR_CXX_NAME::Model model(dummy);
             double previous_torque[7] = { 0, 0, 0, 0, 0, 0, 0 };
+            gazebo::common::Time previous_simulation_time = plugin->_model->GetWorld()->SimTime();
             struct timespec time;
             clock_gettime(CLOCK_MONOTONIC, &time);
             while (!plugin->_finish)
             {
+                //Waiting for next step
                 time.tv_nsec += 1000*1000;
                 if (time.tv_nsec > 1000*1000*1000) { time.tv_nsec -= 1000*1000*1000; time.tv_sec++; }
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
                 if (plugin->_model->GetWorld()->IsPaused()) continue;
                 plugin->_model->GetWorld()->WorldPoseMutex().lock();
+                gazebo::common::Time simulation_time = plugin->_model->GetWorld()->SimTime();
+                bool simulation_step = simulation_time != previous_simulation_time;
+                previous_simulation_time = simulation_time;
                 
+                //Sending data to robot
                 plugin->_plugin_to_robot_mutex.wait();
                 for (size_t i = 0; i < 7; i++)
                 {
@@ -77,21 +82,21 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
                 }
                 plugin->_plugin_to_robot_condition.limitedpost(1);
                 plugin->_plugin_to_robot_mutex.post();
-
                 
+                //Receiving data from robot
                 plugin->_robot_to_plugin_condition.timedwait(_nanosecond_timeout);
                 plugin->_robot_to_plugin_mutex.wait();
-                
                 std::array<double, 7> current_torque = model.gravity(plugin->_shared.data()->robot_state);
                 for (size_t i = 0; i < 7; i++)
                 {
                     current_torque[i] += plugin->_shared.data()->robot_state.tau_J[i];
-                    plugin->_joints[i]->SetForce(0, -previous_torque[i]);
+                    if (!simulation_step) plugin->_joints[i]->SetForce(0, -previous_torque[i]);
                     plugin->_joints[i]->SetForce(0, current_torque[i]);
                     previous_torque[i] = current_torque[i];
                 }
                 plugin->_robot_to_plugin_mutex.post();
                 
+                //Finalizing
                 plugin->_model->GetWorld()->WorldPoseMutex().unlock();
             }
             return nullptr;
