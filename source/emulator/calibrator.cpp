@@ -63,6 +63,7 @@ int _main(int argc, char **argv)
     //Init robot
     franka::Robot real_robot(argv[1]);
     franka::Model real_model = real_robot.loadModel();
+    franka::RobotState real_state = real_robot.readOnce();
 
     //Init model
     pinocchio::Model emulator_model;
@@ -98,7 +99,7 @@ int _main(int argc, char **argv)
             GravityCase cas;
             cas.q = q;
             cas.g(g) = -10.0;
-            cas.gravity = vector(real_model.gravity(array(q), 0.0, std::array<double, 3>({0,0,0}), array(cas.g)));
+            cas.gravity = vector(real_model.gravity(array(q), real_state.m_total, std::array<double, 3>({0,0,0}), array(cas.g)));
             gravity_cases.push_back(cas);
         }
         for (int c = 0; c < 7; c++)
@@ -106,7 +107,7 @@ int _main(int argc, char **argv)
             CoriolisCase cas;
             cas.q = q;
             cas.dq(c) = 1.0;
-            cas.coriolis = vector(real_model.coriolis(array(q), array(cas.dq), std::array<double, 9>({0,0,0,0,0,0,0,0,0}), 0.0, std::array<double, 3>({0,0,0})));
+            cas.coriolis = vector(real_model.coriolis(array(q), array(cas.dq), real_state.I_total, real_state.m_total, std::array<double, 3>({0,0,0})));
             coriolis_cases.push_back(cas);
         }
     }
