@@ -7,6 +7,7 @@
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/algorithm/jacobian.hpp>
 #include <pinocchio/algorithm/joint-configuration.hpp>
+#include <pinocchio/algorithm/center-of-mass.hpp>
 #ifndef _GNU_SOURCE
     #define _GNU_SOURCE
 #endif
@@ -67,6 +68,9 @@ FRANKA_EMULATOR_CXX_NAME::Model::Model(FRANKA_EMULATOR_CXX_NAME::Network&)
         if (!_model.existFrame(name)) throw std::runtime_error("Link not found");
         _link_frame_id[i] = _model.getFrameId(name);
     }
+
+    //Initializing some data
+    pinocchio::computeSubtreeMasses(_model, _data);
 }
 
 FRANKA_EMULATOR_CXX_NAME::Model::Model(Model &&other) noexcept
@@ -214,12 +218,20 @@ std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::Model::gravity(
     const std::array<double, 3>& F_x_Ctotal,
     const std::array<double, 3>& gravity_earth) const noexcept
 {
+    //pinocchio::computeGeneralizedGravity is not working correctly, compute gravity yourself
     Eigen::Matrix<double, 9, 1> full_q;
     full_q.block<7, 1>(0, 0) = Eigen::Matrix<double, 7, 1>::Map(&q[0]);
     full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
-    Eigen::Matrix<double, 9, 1> full_result = pinocchio::computeGeneralizedGravity(_model, _data, full_q);
+    pinocchio::forwardKinematics(_model, _data, full_q);
+    pinocchio::centerOfMass(_model, _data, full_q);
     std::array<double, 7> result;
-    Eigen::Matrix<double, 7, 1>::Map(&result[0]) = full_result.block<7, 1>(0, 0);
+    for (size_t i = 0; i < 7; i++)
+    {
+        Eigen::Matrix<double, 3, 1> joint_to_com = _data.oMi[i+1].act_impl(_data.com[i+1]) - _data.oMi[i+1].translation_impl();
+        Eigen::Matrix<double, 3, 1> force = _data.mass[i+1] * Eigen::Matrix<double, 3, 1>::Map(&gravity_earth[0]);
+        Eigen::Matrix<double, 3, 1> joint_axis = _data.oMi[i+1].rotation_impl().col(2);
+        result[i] = (joint_to_com.cross(force)).dot(joint_axis);
+    }
     return result;
 }
 
