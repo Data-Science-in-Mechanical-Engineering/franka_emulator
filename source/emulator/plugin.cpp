@@ -1,6 +1,4 @@
 #include "../../include/franka_emulator/emulator/plugin.h"
-#include "../../include/franka_emulator/emulator/network.h"
-#include "../../include/franka_emulator/model.h"
 #include <gazebo/physics/World.hh>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/Joint.hh>
@@ -13,7 +11,7 @@
 #include <iostream>
 #include <stdexcept>
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Plugin()
+FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Plugin() : _franka_model(_franka_network)
 {
 }
 
@@ -51,56 +49,40 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
         _robot_to_plugin_mutex = Semaphore("/franka_emulator_" + ip + "_robot_to_plugin_mutex", true, 1);
         _robot_to_plugin_condition = Semaphore("/franka_emulator_" + ip + "_robot_to_plugin_condition", true, 0);
         
-        //Creating real-time thread
-        _thread = Thread(90, this, [](void* uncasted_plugin) -> void*
+        class Subscriber
         {
-            Plugin *plugin = (Plugin*)uncasted_plugin;
-            FRANKA_EMULATOR_CXX_NAME::Network dummy;
-            FRANKA_EMULATOR_CXX_NAME::Model model(dummy);
-            double previous_torque[7] = { 0, 0, 0, 0, 0, 0, 0 };
-            gazebo::common::Time previous_simulation_time = plugin->_model->GetWorld()->SimTime();
-            struct timespec time;
-            clock_gettime(CLOCK_MONOTONIC, &time);
-            while (!plugin->_finish)
+        private:
+            Plugin *_plugin;
+        public:
+            Subscriber(Plugin *plugin) : _plugin(plugin)
             {
-                //Waiting for next step
-                time.tv_nsec += 1000*1000;
-                if (time.tv_nsec > 1000*1000*1000) { time.tv_nsec -= 1000*1000*1000; time.tv_sec++; }
-                clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
-                if (plugin->_model->GetWorld()->IsPaused()) continue;
-                plugin->_model->GetWorld()->WorldPoseMutex().lock();
-                gazebo::common::Time simulation_time = plugin->_model->GetWorld()->SimTime();
-                bool simulation_step = simulation_time != previous_simulation_time;
-                previous_simulation_time = simulation_time;
+            }
+
+            void operator()(const gazebo::common::UpdateInfo&)
+            {
+                _plugin->_model->GetWorld()->WorldPoseMutex().lock();
                 
                 //Sending data to robot
-                plugin->_plugin_to_robot_mutex.wait();
+                _plugin->_plugin_to_robot_mutex.wait();
                 for (size_t i = 0; i < 7; i++)
                 {
-                    plugin->_shared.data()->robot_state.q[i] = plugin->_joints[i]->Position(0);
-                    plugin->_shared.data()->robot_state.dq[i] = plugin->_joints[i]->GetVelocity(0);
+                    _plugin->_shared.data()->robot_state.q[i] = _plugin->_joints[i]->Position(0);
+                    _plugin->_shared.data()->robot_state.dq[i] = _plugin->_joints[i]->GetVelocity(0);
                 }
-                plugin->_plugin_to_robot_condition.limitedpost(1);
-                plugin->_plugin_to_robot_mutex.post();
+                _plugin->_plugin_to_robot_condition.limitedpost(1);
+                _plugin->_plugin_to_robot_mutex.post();
                 
                 //Receiving data from robot
-                plugin->_robot_to_plugin_condition.timedwait(_nanosecond_timeout);
-                plugin->_robot_to_plugin_mutex.wait();
-                std::array<double, 7> current_torque = model.gravity(plugin->_shared.data()->robot_state);
-                for (size_t i = 0; i < 7; i++)
-                {
-                    current_torque[i] += plugin->_shared.data()->robot_state.tau_J[i];
-                    if (!simulation_step) plugin->_joints[i]->SetForce(0, -previous_torque[i]);
-                    plugin->_joints[i]->SetForce(0, current_torque[i]);
-                    previous_torque[i] = current_torque[i];
-                }
-                plugin->_robot_to_plugin_mutex.post();
+                _plugin->_robot_to_plugin_condition.timedwait(_nanosecond_timeout);
+                _plugin->_robot_to_plugin_mutex.wait();
+                std::array<double, 7> gravity = _plugin->_franka_model.gravity(_plugin->_shared.data()->robot_state);
+                for (size_t i = 0; i < 7; i++) _plugin->_joints[i]->SetForce(0, _plugin->_shared.data()->robot_state.tau_J[i] - gravity[i]);
+                _plugin->_robot_to_plugin_mutex.post();
                 
-                //Finalizing
-                plugin->_model->GetWorld()->WorldPoseMutex().unlock();
+                _plugin->_model->GetWorld()->WorldPoseMutex().unlock();
             }
-            return nullptr;
-        });
+        } subscriber(this);
+        _connection = gazebo::event::Events::ConnectWorldUpdateBegin(subscriber);
     }
     catch (std::exception &e)
     {
@@ -112,7 +94,5 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
 
 FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::~Plugin()
 {
-    _finish = true;
-    _thread.join();
     std::cerr << "franka_emulator::emulator::Plugin unloaded" << std::endl;
 }

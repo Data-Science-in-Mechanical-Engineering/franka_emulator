@@ -150,7 +150,7 @@ if (GTest_FOUND)
 endif()
 
 # franka_emulator.sh
-configure_file(source/franka_emulator.sh franka_emulator.sh)
+configure_file(source/emulator/franka_emulator.sh franka_emulator.sh)
 install(FILES ${CMAKE_BINARY_DIR}/franka_emulator.sh DESTINATION bin)
 
 # export

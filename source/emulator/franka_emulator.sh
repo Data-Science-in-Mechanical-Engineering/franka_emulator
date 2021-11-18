@@ -6,11 +6,11 @@ elif [ -f $(pwd)/../share/franka_emulator/model/franka_emulator.world ]; then
 	export GAZEBO_MODEL_PATH=$(pwd)/../share/franka_emulator
 	export GAZEBO_PLUGIN_PATH=$(pwd)/../lib
 	export FRANKA_EMULATOR_IP=$1
-	gazebo $(pwd)/../share/franka_emulator/model/franka_emulator.world -u
+	chrt -f 90 gazebo $(pwd)/../share/franka_emulator/model/franka_emulator.world -u
 else
 	# Not installed
 	export GAZEBO_MODEL_PATH=@CMAKE_SOURCE_DIR@
 	export GAZEBO_PLUGIN_PATH=$(pwd)
 	export FRANKA_EMULATOR_IP=$1
-	gazebo @CMAKE_SOURCE_DIR@/model/franka_emulator.world -u
+	chrt -f 90 gazebo @CMAKE_SOURCE_DIR@/model/franka_emulator.world -u
 fi
