@@ -42,5 +42,6 @@ CMakeFiles/
 
 # franka_emulator #
 ###################
-include/franka
 build/
+include/franka/
+model/franka.sdf

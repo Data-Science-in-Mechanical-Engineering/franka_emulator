@@ -18,6 +18,10 @@ else()
 	execute_process(COMMAND rm -rf ${CMAKE_SOURCE_DIR}/include/franka)
 endif()
 
+if (model/franka.urdf IS_NEWER_THAN model/franka.urdf)
+	execute_process(COMMAND gz sdf -p ${CMAKE_SOURCE_DIR}/model/franka.urdf OUTPUT_FILE ${CMAKE_SOURCE_DIR}/model/franka.sdf)
+endif()
+
 project(lib${FRANKA_EMULATOR_NAME_LOWERCASE} VERSION 0.8.0)
 set(FRANKA_EMULATOR_VERSION_MAJOR 0)
 set(FRANKA_EMULATOR_VERSION_MINOR 0)
@@ -97,19 +101,26 @@ target_link_directories		(franka_emulator_plugin PRIVATE ${GAZEBO_LIBRARY_DIRS})
 target_link_libraries		(franka_emulator_plugin PRIVATE ${GAZEBO_LIBRARIES})
 target_compile_options		(franka_emulator_plugin PRIVATE ${GAZEBO_CXX_FLAGS})
 
-# franka_emulator_calibrator
+# franka_emulator_library_calibrator
 if (Franka_FOUND)
-	add_executable(franka_emulator_calibrator source/emulator/calibrator.cpp)
-	target_link_libraries		(franka_emulator_calibrator PRIVATE franka_emulator_common)
-	target_link_libraries		(franka_emulator_calibrator PRIVATE Franka::Franka)
-	target_include_directories	(franka_emulator_calibrator PRIVATE ${pinocchio_INCLUDE_DIRS})
-	target_link_libraries		(franka_emulator_calibrator PRIVATE ${pinocchio_LIBRARIES})
-	target_include_directories	(franka_emulator_calibrator PRIVATE ${EIGEN3_INCLUDE_DIRS})
+	add_executable(franka_emulator_library_calibrator source/emulator/library_calibrator.cpp)
+	target_link_libraries		(franka_emulator_library_calibrator PRIVATE franka_emulator_common)
+	target_link_libraries		(franka_emulator_library_calibrator PRIVATE Franka::Franka)
+	target_include_directories	(franka_emulator_library_calibrator PRIVATE ${pinocchio_INCLUDE_DIRS})
+	target_link_libraries		(franka_emulator_library_calibrator PRIVATE ${pinocchio_LIBRARIES})
+	target_include_directories	(franka_emulator_library_calibrator PRIVATE ${EIGEN3_INCLUDE_DIRS})
 	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-		target_compile_options (franka_emulator_calibrator PRIVATE -O3)
+		target_compile_options	(franka_emulator_library_calibrator PRIVATE -O3)
 	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-		target_compile_options (franka_emulator_calibrator PRIVATE /O2)
+		target_compile_options	(franka_emulator_library_calibrator PRIVATE /O2)
 	endif()
+endif()
+
+# franka_emulator_friction_calibrator
+if (Franka_FOUND)
+	add_executable(franka_emulator_friction_calibrator source/emulator/friction_calibrator.cpp)
+	target_link_libraries		(franka_emulator_friction_calibrator PRIVATE franka_emulator_common)
+	target_link_libraries		(franka_emulator_friction_calibrator PRIVATE Franka::Franka)
 endif()
 
 # franka_emulator
