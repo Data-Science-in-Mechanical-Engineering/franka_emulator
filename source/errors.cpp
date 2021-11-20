@@ -1,20 +1,20 @@
 #include "../include/franka_emulator/errors.h"
 
-FRANKA_EMULATOR_CXX_NAME::Errors::Errors() : Errors(std::array<bool, 37>{})
+FRANKA_EMULATOR::Errors::Errors() : Errors(std::array<bool, 37>{})
 {}
 
-FRANKA_EMULATOR_CXX_NAME::Errors::Errors(const Errors& other) : Errors(other.errors_)
+FRANKA_EMULATOR::Errors::Errors(const Errors& other) : Errors(other.errors_)
 {
     errors_ = other.errors_;
 }
 
-FRANKA_EMULATOR_CXX_NAME::Errors& FRANKA_EMULATOR_CXX_NAME::Errors::operator=(Errors other)
+FRANKA_EMULATOR::Errors& FRANKA_EMULATOR::Errors::operator=(Errors other)
 {
     errors_ = other.errors_;
     return *this;
 }
 
-FRANKA_EMULATOR_CXX_NAME::Errors::Errors(const std::array<bool, 37>& errors) :
+FRANKA_EMULATOR::Errors::Errors(const std::array<bool, 37>& errors) :
     errors_(errors),
     joint_position_limits_violation(errors_[0]),
     cartesian_position_limits_violation(errors_[1]),
@@ -57,7 +57,7 @@ FRANKA_EMULATOR_CXX_NAME::Errors::Errors(const std::array<bool, 37>& errors) :
     errors_ = errors;
 }
 
-FRANKA_EMULATOR_CXX_NAME::Errors::operator bool() const noexcept
+FRANKA_EMULATOR::Errors::operator bool() const noexcept
 {
     for (size_t i = 0; i < 37; i++)
     {
@@ -66,7 +66,7 @@ FRANKA_EMULATOR_CXX_NAME::Errors::operator bool() const noexcept
     return false;
 }
 
-FRANKA_EMULATOR_CXX_NAME::Errors::operator std::string() const
+FRANKA_EMULATOR::Errors::operator std::string() const
 {
     std::string result = "[";
     if (joint_position_limits_violation) result += "joint_position_limits_violation, ";
@@ -111,7 +111,7 @@ FRANKA_EMULATOR_CXX_NAME::Errors::operator std::string() const
     return result;
 }
 
-std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR_CXX_NAME::Errors& errors)
+std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR::Errors& errors)
 {
     ostream << static_cast<std::string>(errors);
     return ostream;

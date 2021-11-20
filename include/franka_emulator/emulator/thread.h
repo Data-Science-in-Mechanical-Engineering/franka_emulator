@@ -2,7 +2,7 @@
 
 #include <pthread.h>
 
-namespace FRANKA_EMULATOR_CXX_NAME
+namespace FRANKA_EMULATOR
 {
     namespace emulator
     {

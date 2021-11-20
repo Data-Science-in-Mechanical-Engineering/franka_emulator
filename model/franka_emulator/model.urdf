@@ -4,15 +4,20 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="panda">
-  <!-- Is the robot being simulated in gazebo?" -->
   <!-- =============================================================== -->
-  <!-- || This file does not contain official inertial properties   || -->
-  <!-- || of panda robot. The values are from the identification    || -->
+  <!-- || This file contains the robot with the hand and is used    || -->
+  <!-- || by Gazebo for simulation. The file                        || -->
+  <!-- || does not contain official inertial properties of panda    || -->
+  <!-- || robot. The original values came from the identification   || -->
   <!-- || results published in: Identification of the Franka Emika  || -->
   <!-- || PandaRobot With Retrieval of Feasible Parameters Using    || -->
   <!-- || Penalty-Based Optimization                                || -->
   <!-- || by: Claudio Gaz, Marco Cognetti, Alexander Oliva,         || -->
   <!-- || Paolo Robuffo Giordano, Alessandro de Lucaa               || -->
+  <!-- || Current values were calculated by                         || -->
+  <!-- || franka_emulator_inertia_calibrator and                    || -->
+  <!-- || franka_emulator_friction_calibrator, written by           || -->
+  <!-- || Kyrylo Sovailo                                            || -->
   <!-- =============================================================== -->
   <link name="panda_link0">
     <visual>
@@ -48,9 +53,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.00821216 -0.0265777 -0.0476148"/>
-      <mass value="4.97068"/>
-      <inertia ixx="0.703435" ixy="-0.000118671" ixz="0.00679074" iyy="0.706505" iyz="0.019157" izz="0.00914644"/>
+      <origin rpy="0 0 0" xyz="0.0082121602797146209 -0.026532335711888823 -0.047138121275696603"/>
+      <mass value="4.9706751871147938"/>
+      <inertia ixx="0.70141461794089599" ixy="-0.00063981642154032682" ixz="0.0078364148804466946" iyy="0.70480134490761892" iyz="0.01074540620106503" izz="0.010111109106129931"/>
     </inertial>
   </link>
   <joint name="panda_joint1" type="revolute">
@@ -60,7 +65,7 @@
     <child link="panda_link1"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="15" effort="87" lower="-2.9671" upper="2.9671" velocity="2.5"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.8315" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link2">
     <visual>
@@ -76,9 +81,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="-0.00885572 -0.0153876 -0.000210413"/>
-      <mass value="0.646303"/>
-      <inertia ixx="0.00796321" ixy="-0.00390696" ixz="0.0102439" iyy="0.0281194" iyz="0.000678074" izz="0.0259687"/>
+      <origin rpy="0 0 0" xyz="-0.0088444802449167883 -0.027531520310653038 -0.00055850347148591131"/>
+      <mass value="0.64712411452542207"/>
+      <inertia ixx="0.012028228395010528" ixy="-0.005176957021186453" ixz="0.028416723889140006" iyy="0.034001000715476563" iyz="-0.0034872992153212263" izz="0.026005490424668338"/>
     </inertial>
   </link>
   <joint name="panda_joint2" type="revolute">
@@ -88,7 +93,7 @@
     <child link="panda_link2"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="7.5" effort="87" lower="-1.8326" upper="1.8326" velocity="2.5"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.99845" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link3">
     <visual>
@@ -104,9 +109,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.0104185 0.0386205 -0.133194"/>
-      <mass value="3.22332"/>
-      <inertia ixx="0.0372421" ixy="-0.00476086" ixz="-0.0113964" iyy="0.0361549" iyz="-0.012805" izz="0.0108299"/>
+      <origin rpy="0 0 0" xyz="0.028340188017725303 0.037617533422114727 -0.067208806995820797"/>
+      <mass value="3.2283417206016849"/>
+      <inertia ixx="0.035865608781665073" ixy="-0.0048981742215283711" ixz="-0.01683647440270046" iyy="0.041062395573147469" iyz="-0.012957871374295925" izz="0.0072954180594979098"/>
     </inertial>
   </link>
   <joint name="panda_joint3" type="revolute">
@@ -116,7 +121,7 @@
     <child link="panda_link3"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="12.5" effort="87" lower="-2.9671" upper="2.9671" velocity="2.5"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.8923" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link4">
     <visual>
@@ -132,9 +137,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="-0.0366071 0.0354336 0.0281498"/>
-      <mass value="3.57869"/>
-      <inertia ixx="0.0258529" ixy="0.007796" ixz="-0.001332" iyy="0.019552" iyz="0.008641" izz="0.028323"/>
+      <origin rpy="0 0 0" xyz="-0.052863658713578371 0.10286796966271235 0.027230575794129856"/>
+      <mass value="3.5877058164189872"/>
+      <inertia ixx="0.023713305935381724" ixy="0.019494904018681623" ixz="-0.00041806758858047981" iyy="0.016777579582937466" iyz="0.0073688153189040975" izz="0.03323445513208665"/>
     </inertial>
   </link>
   <joint name="panda_joint4" type="revolute">
@@ -144,7 +149,7 @@
     <child link="panda_link4"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="12.5" effort="87" lower="-3.1416" upper="-0.4" velocity="2.5"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="1.29255" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link5">
     <visual>
@@ -160,9 +165,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="-0.00828477 0.0439319 -0.0620007"/>
-      <mass value="1.21201"/>
-      <inertia ixx="0.035549" ixy="-0.002117" ixz="-0.004037" iyy="0.029474" iyz="0.000229" izz="0.008627"/>
+      <origin rpy="0 0 0" xyz="-0.0081910657546574537 0.042932437976240877 -0.03621309770351528"/>
+      <mass value="1.2258764841419181"/>
+      <inertia ixx="0.039833353765046244" ixy="-0.0041636653470603583" ixz="-0.0057791872240629304" iyy="0.027963868212344249" iyz="0.0057981330723796617" izz="0.0058527143406942126"/>
     </inertial>
   </link>
   <joint name="panda_joint5" type="revolute">
@@ -172,7 +177,7 @@
     <child link="panda_link5"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="15" effort="12" lower="-2.9671" upper="2.9671" velocity="3"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.81225" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link6">
     <visual>
@@ -188,9 +193,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.0216331 0.0214695 -0.0144161"/>
-      <mass value="1.65017"/>
-      <inertia ixx="0.001964" ixy="0.000109" ixz="-0.001158" iyy="0.004354" iyz="0.000341" izz="0.005433"/>
+      <origin rpy="0 0 0" xyz="0.060550072294159214 -0.013508438365027796 -0.014648696562393272"/>
+      <mass value="1.6660195957719575"/>
+      <inertia ixx="0.0018946535529745841" ixy="3.0085693236067733e-05" ixz="-0.0014917301754574759" iyy="0.0059333708668997337" iyz="0.001150006504840946" izz="0.0039230158812056833"/>
     </inertial>
   </link>
   <joint name="panda_joint6" type="revolute">
@@ -200,7 +205,7 @@
     <child link="panda_link6"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="20" effort="12" lower="-0.0873" upper="3.8223" velocity="3"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.58725" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link7">
     <visual>
@@ -216,9 +221,9 @@
       </geometry>
     </collision>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.00431676 -0.000322275 0.0678681"/>
-      <mass value="1.44666"/>
-      <inertia ixx="0.016396" ixy="0.000394964" ixz="-0.000710116" iyy="0.0139734" iyz="-0.00105381" izz="0.00667531"/>
+      <origin rpy="0 0 0" xyz="0.0084850731223620312 -0.00063346827849231481 0.061428526086978817"/>
+      <mass value="0.73598318978014388"/>
+      <inertia ixx="0.0096273165930081117" ixy="0.0011836273982315374" ixz="0.0021412918431209403" iyy="0.011335955410605407" iyz="-0.000625294249958001" izz="0.0063944769299665851"/>
     </inertial>
   </link>
   <joint name="panda_joint7" type="revolute">
@@ -228,7 +233,7 @@
     <child link="panda_link7"/>
     <axis xyz="0 0 1"/>
     <limit acceleration="20" effort="12" lower="-2.9671" upper="2.9671" velocity="3"/>
-    <dynamics D="1" K="7000" damping="0.003" friction="0.0" mu_coulomb="0" mu_viscous="16"/>
+    <dynamics D="1" K="7000" damping="0.003" friction="0.4132" mu_coulomb="0" mu_viscous="16"/>
   </joint>
   <link name="panda_link8"/>
   <joint name="panda_joint8" type="fixed">

@@ -10,7 +10,7 @@
  * Contains the franka::Errors type.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 /**
  * Enumerates errors that can occur while controlling a franka::Robot.
@@ -239,4 +239,4 @@ struct Errors {
  */
 std::ostream& operator<<(std::ostream& ostream, const Errors& errors);
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

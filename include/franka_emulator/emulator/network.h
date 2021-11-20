@@ -1,6 +1,6 @@
 #pragma once
 
-namespace FRANKA_EMULATOR_CXX_NAME
+namespace FRANKA_EMULATOR
 {
     class Network{};
 }

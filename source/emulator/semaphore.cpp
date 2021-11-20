@@ -2,10 +2,10 @@
 #include <fcntl.h>
 #include <stdexcept>
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::Semaphore()
+FRANKA_EMULATOR::emulator::Semaphore::Semaphore()
 {}
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::Semaphore(const std::string name, bool create, int value)
+FRANKA_EMULATOR::emulator::Semaphore::Semaphore(const std::string name, bool create, int value)
 {
     _name = name;
     _semaphore = sem_open(_name.c_str(), create ? O_CREAT : 0, 0644, value);
@@ -19,7 +19,7 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::Semaphore(const std::string name,
     }
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore &FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::operator=(Semaphore &&other)
+FRANKA_EMULATOR::emulator::Semaphore &FRANKA_EMULATOR::emulator::Semaphore::operator=(Semaphore &&other)
 {
     close();
     _name = other._name; other._name.clear();
@@ -27,7 +27,7 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore &FRANKA_EMULATOR_CXX_NAME::emulato
     return *this;
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::close()
+void FRANKA_EMULATOR::emulator::Semaphore::close()
 {
     if (_semaphore != SEM_FAILED)
     {
@@ -37,13 +37,13 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::close()
     }
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::wait()
+void FRANKA_EMULATOR::emulator::Semaphore::wait()
 {
     if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::wait: semaphore was not opened");
     sem_wait(_semaphore);
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::timedwait(int nsec)
+void FRANKA_EMULATOR::emulator::Semaphore::timedwait(int nsec)
 {
     if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::wait: semaphore was not opened");
     timespec timeout;
@@ -53,13 +53,13 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::timedwait(int nsec)
     sem_timedwait(_semaphore, &timeout);
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::post()
+void FRANKA_EMULATOR::emulator::Semaphore::post()
 {
     if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::post: semaphore was not opened");
     sem_post(_semaphore);
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::limitedpost(int limit)
+void FRANKA_EMULATOR::emulator::Semaphore::limitedpost(int limit)
 {
     if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::limitedpost: semaphore was not opened");
     int value;
@@ -67,7 +67,7 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::limitedpost(int limit)
     if (value < limit) sem_post(_semaphore);
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Semaphore::~Semaphore()
+FRANKA_EMULATOR::emulator::Semaphore::~Semaphore()
 {
     close();
 }

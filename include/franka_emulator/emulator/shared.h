@@ -4,7 +4,7 @@
 #include <sys/mman.h>
 #include <string>
 
-namespace FRANKA_EMULATOR_CXX_NAME
+namespace FRANKA_EMULATOR
 {
     namespace emulator
     {

@@ -1,7 +1,7 @@
 #include "../include/franka_emulator/rate_limiting.h"
 #include <stddef.h>
 
-std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
+std::array<double, 7> FRANKA_EMULATOR::limitRate(
     const std::array<double, 7>& max_derivatives,
     const std::array<double, 7>& commanded_values,
     const std::array<double, 7>& last_commanded_values)
@@ -11,7 +11,7 @@ std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
     return result;
 }
 
-double FRANKA_EMULATOR_CXX_NAME::limitRate(
+double FRANKA_EMULATOR::limitRate(
     double max_velocity,
     double max_acceleration,
     double max_jerk,
@@ -22,7 +22,7 @@ double FRANKA_EMULATOR_CXX_NAME::limitRate(
     return 0.0;
 }
 
-double FRANKA_EMULATOR_CXX_NAME::limitRate(
+double FRANKA_EMULATOR::limitRate(
     double max_velocity,
     double max_acceleration,
     double max_jerk,
@@ -34,7 +34,7 @@ double FRANKA_EMULATOR_CXX_NAME::limitRate(
     return 0.0;
 }
 
-std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
+std::array<double, 7> FRANKA_EMULATOR::limitRate(
     const std::array<double, 7>& max_velocity,
     const std::array<double, 7>& max_acceleration,
     const std::array<double, 7>& max_jerk,
@@ -47,7 +47,7 @@ std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
     return result;
 }
 
-std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
+std::array<double, 7> FRANKA_EMULATOR::limitRate(
     const std::array<double, 7>& max_velocity,
     const std::array<double, 7>& max_acceleration,
     const std::array<double, 7>& max_jerk,
@@ -61,7 +61,7 @@ std::array<double, 7> FRANKA_EMULATOR_CXX_NAME::limitRate(
     return result;
 }
 
-std::array<double, 6> FRANKA_EMULATOR_CXX_NAME::limitRate(
+std::array<double, 6> FRANKA_EMULATOR::limitRate(
     double max_translational_velocity,
     double max_translational_acceleration,
     double max_translational_jerk,
@@ -77,7 +77,7 @@ std::array<double, 6> FRANKA_EMULATOR_CXX_NAME::limitRate(
     return result;
 }
 
-std::array<double, 16> FRANKA_EMULATOR_CXX_NAME::limitRate(
+std::array<double, 16> FRANKA_EMULATOR::limitRate(
     double max_translational_velocity,
     double max_translational_acceleration,
     double max_translational_jerk,

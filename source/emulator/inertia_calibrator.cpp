@@ -3,7 +3,6 @@
 #include <pinocchio/parsers/urdf.hpp>
 #include <pinocchio/algorithm/rnea.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
-#include <pinocchio/algorithm/center-of-mass.hpp>
 #include <Eigen/Dense>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -47,33 +46,13 @@ Eigen::Matrix<double, 7, 1> vector(const std::array<double, 7> &v)
 
 Eigen::Matrix<double, 7, 1> compute_emulator_gravity(pinocchio::Model &model, pinocchio::Data &data, const Eigen::Matrix<double, 7, 1> &q, const Eigen::Matrix<double, 3, 1> &gravity)
 {
-    Eigen::Matrix<double, 9, 1> full_q;
-    full_q.block<7, 1>(0, 0) = q;
-    full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
-    pinocchio::forwardKinematics(model, data, full_q);
-    pinocchio::computeSubtreeMasses(model, data);
-    pinocchio::centerOfMass(model, data, full_q);
-    Eigen::Matrix<double, 7, 1> result;
-    for (size_t i = 0; i < 7; i++)
-    {
-        Eigen::Matrix<double, 3, 1> joint_to_com = data.oMi[i+1].act_impl(data.com[i+1]) - data.oMi[i+1].translation_impl();
-        Eigen::Matrix<double, 3, 1> force = data.mass[i+1] * gravity;
-        Eigen::Matrix<double, 3, 1> joint_axis = data.oMi[i+1].rotation_impl().col(2);
-        result(i) = (joint_to_com.cross(force)).dot(joint_axis);
-    }
-    return result;
+    model.gravity.linear_impl() = gravity;
+    return pinocchio::computeGeneralizedGravity(model, data, q);
 }
 
 Eigen::Matrix<double, 7, 1> compute_emulator_coriolis(pinocchio::Model &model, pinocchio::Data &data, const Eigen::Matrix<double, 7, 1> &q, const Eigen::Matrix<double, 7, 1> &dq)
 {
-    Eigen::Matrix<double, 9, 1> full_q;
-    full_q.block<7, 1>(0, 0) = q;
-    full_q.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
-    Eigen::Matrix<double, 9, 1> full_dq;
-    full_dq.block<7, 1>(0, 0) = dq;
-    full_dq.block<2, 1>(7, 0) = Eigen::Matrix<double, 2, 1>::Zero();
-    Eigen::Matrix<double, 9, 9> full_result = pinocchio::computeCoriolisMatrix(model, data, full_q, full_dq);
-    return (full_result * full_dq).block<7, 1>(0, 0);
+    return pinocchio::computeCoriolisMatrix(model, data, q, dq) * dq;
 }
 
 int _main(int argc, char **argv)
@@ -87,13 +66,12 @@ int _main(int argc, char **argv)
     //Init robot
     franka::Robot real_robot(argv[1]);
     franka::Model real_model = real_robot.loadModel();
-    franka::RobotState real_state = real_robot.readOnce();
 
     //Init model
     pinocchio::Model emulator_model;
     struct stat model_stat;
-    if (stat("model/franka.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("model/franka.urdf", emulator_model);
-    else if (stat("../model/franka.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("../model/franka.urdf", emulator_model);
+    if (stat("model/franka_emulator.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("model/franka_emulator.urdf", emulator_model);
+    else if (stat("../model/franka_emulator.urdf", &model_stat) == 0) pinocchio::urdf::buildModel("../model/franka_emulator.urdf", emulator_model);
     else throw std::runtime_error("Could not find model file");
     pinocchio::Data emulator_data(emulator_model);
 
@@ -111,19 +89,19 @@ int _main(int argc, char **argv)
     for (int j6 = -1; j6 <= 1; j6++)
     {
         Eigen::Matrix<double, 7, 1> q;
-        q(0) = j0 * M_PI / 2;
-        q(1) = j1 * M_PI / 2;
-        q(2) = j2 * M_PI / 2;
+        q(0) = j0 * M_PI / 4;
+        q(1) = j1 * M_PI / 4;
+        q(2) = j2 * M_PI / 4;
         q(3) = -M_PI/2 + j3 * M_PI/4;
-        q(4) = j4 * M_PI / 2;
-        q(5) = M_PI/2 + j5 * M_PI/2;
-        q(6) = j6 * M_PI / 2;
+        q(4) = j4 * M_PI / 4;
+        q(5) = M_PI/4 + j5 * M_PI/4;
+        q(6) = j6 * M_PI / 4;
         for (int g = 0; g < 3; g++)
         {
             GravityCase cas;
             cas.q = q;
             cas.g(g) = -10.0;
-            cas.gravity = vector(real_model.gravity(array(q), real_state.m_total, std::array<double, 3>({0,0,0}), array(cas.g)));
+            cas.gravity = vector(real_model.gravity(array(q), 0.0, std::array<double, 3>({0,0,0}), array(cas.g)));
             gravity_cases.push_back(cas);
         }
         for (int c = 0; c < 7; c++)
@@ -131,7 +109,7 @@ int _main(int argc, char **argv)
             CoriolisCase cas;
             cas.q = q;
             cas.dq(c) = 1.0;
-            cas.coriolis = vector(real_model.coriolis(array(q), array(cas.dq), real_state.I_total, real_state.m_total, std::array<double, 3>({0,0,0})));
+            cas.coriolis = vector(real_model.coriolis(array(q), array(cas.dq), std::array<double, 9>({0,0,0,0,0,0,0,0,0}), 0.0, std::array<double, 3>({0,0,0})));
             coriolis_cases.push_back(cas);
         }
     }
@@ -174,7 +152,9 @@ int _main(int argc, char **argv)
             Eigen::Matrix<double, 7, 1> emulator_coriolis = compute_emulator_coriolis(emulator_model, emulator_data, coriolis_cases[cas].q, coriolis_cases[cas].dq);
             error.block<7,1>(coriolis_error0 + 7*cas,0) = emulator_coriolis - coriolis_cases[cas].coriolis;
         }
-        std::cout << "Error norm: " << error.norm() << std::endl;
+        std::cout << "Error 2-norm:        " << error.norm() << std::endl;
+        std::cout << "Error 1-norm:        " << error.lpNorm<1>() << std::endl;
+        std::cout << "Error infinity-norm: " << error.lpNorm<Eigen::Infinity>() << std::endl;
         if (error.norm() >= previous_error_norm) break;
         previous_parameters = parameters;
         previous_error_norm = error.norm();
@@ -274,6 +254,7 @@ int _main(int argc, char **argv)
 
     //Printing parameters
     std::cout << "Calibration finished" << std::endl;
+    std::cout.precision(std::numeric_limits<double>::max_digits10);
     for (unsigned int link = 0; link < 7; link++)
     {
         std::cout << "<link name=\"panda_link" << link+1 << "\">" << std::endl;

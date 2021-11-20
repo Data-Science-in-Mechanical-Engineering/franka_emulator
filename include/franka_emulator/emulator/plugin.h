@@ -6,7 +6,7 @@
 #include <string>
 #include <pthread.h>
 
-namespace FRANKA_EMULATOR_CXX_NAME
+namespace FRANKA_EMULATOR
 {
     namespace emulator
     {
@@ -34,6 +34,6 @@ namespace FRANKA_EMULATOR_CXX_NAME
             virtual ~Plugin();
         };
 
-        GZ_REGISTER_MODEL_PLUGIN(FRANKA_EMULATOR_CXX_NAME::emulator::Plugin)
+        GZ_REGISTER_MODEL_PLUGIN(FRANKA_EMULATOR::emulator::Plugin)
     }
 }

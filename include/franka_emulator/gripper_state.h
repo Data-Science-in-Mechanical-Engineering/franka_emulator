@@ -12,7 +12,7 @@
  * Contains the franka::GripperState type.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 /**
  * Describes the gripper state.
@@ -56,6 +56,6 @@ struct GripperState {
  *
  * @return Ostream instance
  */
-std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR_CXX_NAME::GripperState& gripper_state);
+std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR::GripperState& gripper_state);
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

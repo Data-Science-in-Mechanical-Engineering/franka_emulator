@@ -3,7 +3,7 @@
 #include <string>
 #include <semaphore.h>
 
-namespace FRANKA_EMULATOR_CXX_NAME
+namespace FRANKA_EMULATOR
 {
     namespace emulator
     {

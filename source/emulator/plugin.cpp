@@ -11,11 +11,11 @@
 #include <iostream>
 #include <stdexcept>
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Plugin() : _franka_model(_franka_network)
+FRANKA_EMULATOR::emulator::Plugin::Plugin() : _franka_model(_franka_network)
 {
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
+void FRANKA_EMULATOR::emulator::Plugin::Load(gazebo::physics::ModelPtr model, sdf::ElementPtr sdf)
 {
     try
     {
@@ -75,8 +75,8 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
                 //Receiving data from robot
                 _plugin->_robot_to_plugin_condition.timedwait(_nanosecond_timeout);
                 _plugin->_robot_to_plugin_mutex.wait();
-                std::array<double, 7> gravity = _plugin->_franka_model.gravity(_plugin->_shared.data()->robot_state);
-                for (size_t i = 0; i < 7; i++) _plugin->_joints[i]->SetForce(0, _plugin->_shared.data()->robot_state.tau_J[i] - gravity[i]);
+                std::array<double, 7> gravity = _plugin->_franka_model.gravity(_plugin->_shared.data()->robot_state.q, 0.73, std::array<double, 3>({0,0,0}));
+                for (size_t i = 0; i < 7; i++) _plugin->_joints[i]->SetForce(0, _plugin->_shared.data()->robot_state.tau_J[i] + gravity[i]);
                 _plugin->_robot_to_plugin_mutex.post();
                 
                 _plugin->_model->GetWorld()->WorldPoseMutex().unlock();
@@ -92,7 +92,7 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::Load(gazebo::physics::ModelPtr 
     std::cerr << "franka_emulator::emulator::Plugin loaded" << std::endl;
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Plugin::~Plugin()
+FRANKA_EMULATOR::emulator::Plugin::~Plugin()
 {
     std::cerr << "franka_emulator::emulator::Plugin unloaded" << std::endl;
 }

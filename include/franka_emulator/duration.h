@@ -11,7 +11,7 @@
  * Contains the franka::Duration type.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 /**
  * Represents a duration with millisecond resolution.
@@ -262,4 +262,4 @@ class Duration {
  */
 Duration operator*(uint64_t lhs, const Duration& rhs) noexcept;
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

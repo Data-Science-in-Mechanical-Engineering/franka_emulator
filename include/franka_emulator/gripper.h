@@ -13,7 +13,7 @@
  * Contains the franka::Gripper type.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 class Network;
 
@@ -148,4 +148,4 @@ class Gripper {
   /// @endcond
 };
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

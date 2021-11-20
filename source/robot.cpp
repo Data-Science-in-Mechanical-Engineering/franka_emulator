@@ -9,7 +9,7 @@
 #include <sched.h>
 #include <semaphore.h>
 
-FRANKA_EMULATOR_CXX_NAME::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
+FRANKA_EMULATOR::Robot::Robot(const std::string& franka_address, RealtimeConfig, size_t)
 {
     //Opening shaed memory
     _shared = emulator::Shared("/franka_emulator_" + franka_address + "_memory", false);
@@ -21,12 +21,12 @@ FRANKA_EMULATOR_CXX_NAME::Robot::Robot(const std::string& franka_address, Realti
     _robot_to_plugin_condition = emulator::Semaphore("/franka_emulator_" + franka_address + "_robot_to_plugin_condition", false, 0);
 }
 
-FRANKA_EMULATOR_CXX_NAME::Robot::Robot(Robot&& other) noexcept
+FRANKA_EMULATOR::Robot::Robot(Robot&& other) noexcept
 {
     *this = std::move(other);
 }
 
-FRANKA_EMULATOR_CXX_NAME::Robot& FRANKA_EMULATOR_CXX_NAME::Robot::operator=(Robot&& other) noexcept
+FRANKA_EMULATOR::Robot& FRANKA_EMULATOR::Robot::operator=(Robot&& other) noexcept
 {
     _context                    = other._context;   other._context  = nullptr;
     _callback                   = other._callback;  other._callback = nullptr;
@@ -38,11 +38,11 @@ FRANKA_EMULATOR_CXX_NAME::Robot& FRANKA_EMULATOR_CXX_NAME::Robot::operator=(Robo
     return *this;
 }
 
-FRANKA_EMULATOR_CXX_NAME::Robot::~Robot() noexcept
+FRANKA_EMULATOR::Robot::~Robot() noexcept
 {
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::_control()
+void FRANKA_EMULATOR::Robot::_control()
 {
     emulator::Thread _thread(80, this, [](void* uncasted_robot) -> void*
     {
@@ -63,11 +63,11 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::_control()
     _thread.join();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback, bool, double)
 {
     struct Context
     {
-        std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
+        std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
     } context;
     context.callback = callback;
     _context = &context;
@@ -83,35 +83,12 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotS
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback, std::function<JointPositions(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback, bool, double)
 {
     struct Context
     {
-        std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
-        std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback;
-    } context;
-    context.callback = callback;
-    context.motion_callback = motion_callback;
-    _context = &context;
-
-    _callback = [](Robot* robot) -> bool
-    {
-        Context *context = (Context*)robot->_context;
-        context->motion_callback(robot->_shared.data()->robot_state, Duration(1));
-        Torques result = context->callback(robot->_shared.data()->robot_state, Duration(1));
-        for (size_t i = 0; i < 7; i++) robot->_shared.data()->robot_state.tau_J[i] = result.tau_J[i];
-        return result.motion_finished;
-    };
-
-    _control();
-}
-
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback, bool, double)
-{
-    struct Context
-    {
-        std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
-        std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback;
+        std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
+        std::function<JointPositions(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback;
     } context;
     context.callback = callback;
     context.motion_callback = motion_callback;
@@ -129,12 +106,12 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotS
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback, std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback, bool, double)
 {
     struct Context
     {
-        std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
-        std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback;
+        std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
+        std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback;
     } context;
     context.callback = callback;
     context.motion_callback = motion_callback;
@@ -152,12 +129,12 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotS
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback, std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback, bool, double)
 {
     struct Context
     {
-        std::function<Torques(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
-        std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> motion_callback;
+        std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
+        std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback;
     } context;
     context.callback = callback;
     context.motion_callback = motion_callback;
@@ -175,11 +152,34 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<Torques(const RobotS
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, ControllerMode, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback, std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback, bool, double)
 {
     struct Context
     {
-        std::function<JointPositions(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
+        std::function<Torques(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
+        std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> motion_callback;
+    } context;
+    context.callback = callback;
+    context.motion_callback = motion_callback;
+    _context = &context;
+
+    _callback = [](Robot* robot) -> bool
+    {
+        Context *context = (Context*)robot->_context;
+        context->motion_callback(robot->_shared.data()->robot_state, Duration(1));
+        Torques result = context->callback(robot->_shared.data()->robot_state, Duration(1));
+        for (size_t i = 0; i < 7; i++) robot->_shared.data()->robot_state.tau_J[i] = result.tau_J[i];
+        return result.motion_finished;
+    };
+
+    _control();
+}
+
+void FRANKA_EMULATOR::Robot::control(std::function<JointPositions(const RobotState&, FRANKA_EMULATOR::Duration)> callback, ControllerMode, bool, double)
+{
+    struct Context
+    {
+        std::function<JointPositions(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
     } context;
     context.callback = callback;
     _context = &context;
@@ -197,11 +197,11 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<JointPositions(const
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, ControllerMode, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> callback, ControllerMode, bool, double)
 {
     struct Context
     {
-        std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback;
+        std::function<JointVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> callback;
     } context;
     context.callback = callback;
     _context = &context;
@@ -218,16 +218,16 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<JointVelocities(cons
     _control();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, ControllerMode, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<CartesianPose(const RobotState&, FRANKA_EMULATOR::Duration)> callback, ControllerMode, bool, double)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::control(std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR_CXX_NAME::Duration)> callback, ControllerMode, bool, double)
+void FRANKA_EMULATOR::Robot::control(std::function<CartesianVelocities(const RobotState&, FRANKA_EMULATOR::Duration)> callback, ControllerMode, bool, double)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::read(std::function<bool(const RobotState&)> callback)
+void FRANKA_EMULATOR::Robot::read(std::function<bool(const RobotState&)> callback)
 {}
 
-FRANKA_EMULATOR_CXX_NAME::RobotState FRANKA_EMULATOR_CXX_NAME::Robot::readOnce()
+FRANKA_EMULATOR::RobotState FRANKA_EMULATOR::Robot::readOnce()
 {
     _plugin_to_robot_condition.wait();
     _plugin_to_robot_mutex.wait();
@@ -237,12 +237,12 @@ FRANKA_EMULATOR_CXX_NAME::RobotState FRANKA_EMULATOR_CXX_NAME::Robot::readOnce()
     return robot_state;
 }
 
-FRANKA_EMULATOR_CXX_NAME::VirtualWallCuboid FRANKA_EMULATOR_CXX_NAME::Robot::getVirtualWall(int32_t id)
+FRANKA_EMULATOR::VirtualWallCuboid FRANKA_EMULATOR::Robot::getVirtualWall(int32_t id)
 {
     return VirtualWallCuboid();
 }
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setCollisionBehavior(
+void FRANKA_EMULATOR::Robot::setCollisionBehavior(
     const std::array<double, 7>& lower_torque_thresholds_acceleration,
     const std::array<double, 7>& upper_torque_thresholds_acceleration,
     const std::array<double, 7>& lower_torque_thresholds_nominal,
@@ -253,32 +253,32 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::setCollisionBehavior(
     const std::array<double, 6>& upper_force_thresholds_nominal)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setCollisionBehavior(
+void FRANKA_EMULATOR::Robot::setCollisionBehavior(
     const std::array<double, 7>& lower_torque_thresholds,
     const std::array<double, 7>& upper_torque_thresholds,
     const std::array<double, 6>& lower_force_thresholds,
     const std::array<double, 6>& upper_force_thresholds)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setJointImpedance(const std::array<double, 7>& K_theta)
+void FRANKA_EMULATOR::Robot::setJointImpedance(const std::array<double, 7>& K_theta)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setCartesianImpedance(const std::array<double, 6>& K_x)
+void FRANKA_EMULATOR::Robot::setCartesianImpedance(const std::array<double, 6>& K_x)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setGuidingMode(const std::array<bool, 6>& guiding_mode, bool elbow)
+void FRANKA_EMULATOR::Robot::setGuidingMode(const std::array<bool, 6>& guiding_mode, bool elbow)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setK(const std::array<double, 16>& EE_T_K)
+void FRANKA_EMULATOR::Robot::setK(const std::array<double, 16>& EE_T_K)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setEE(const std::array<double, 16>& NE_T_EE)
+void FRANKA_EMULATOR::Robot::setEE(const std::array<double, 16>& NE_T_EE)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setLoad(double load_mass, const std::array<double, 3>& F_x_Cload, const std::array<double, 9>& load_inertia)
+void FRANKA_EMULATOR::Robot::setLoad(double load_mass, const std::array<double, 3>& F_x_Cload, const std::array<double, 9>& load_inertia)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::setFilters(
+void FRANKA_EMULATOR::Robot::setFilters(
     double joint_position_filter_frequency,
     double joint_velocity_filter_frequency,
     double cartesian_position_filter_frequency,
@@ -286,19 +286,19 @@ void FRANKA_EMULATOR_CXX_NAME::Robot::setFilters(
     double controller_filter_frequency)
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::automaticErrorRecovery()
+void FRANKA_EMULATOR::Robot::automaticErrorRecovery()
 {}
 
-void FRANKA_EMULATOR_CXX_NAME::Robot::stop()
+void FRANKA_EMULATOR::Robot::stop()
 {}
 
-FRANKA_EMULATOR_CXX_NAME::Model FRANKA_EMULATOR_CXX_NAME::Robot::loadModel()
+FRANKA_EMULATOR::Model FRANKA_EMULATOR::Robot::loadModel()
 {
     Network dummy;
     return Model(dummy);
 }
 
-FRANKA_EMULATOR_CXX_NAME::Robot::ServerVersion FRANKA_EMULATOR_CXX_NAME::Robot::serverVersion() const noexcept
+FRANKA_EMULATOR::Robot::ServerVersion FRANKA_EMULATOR::Robot::serverVersion() const noexcept
 {
     return 10000 * FRANKA_EMULATOR_VERSION_MAJOR + 100 * FRANKA_EMULATOR_VERSION_MINOR + FRANKA_EMULATOR_VERSION_PATCH;
 }

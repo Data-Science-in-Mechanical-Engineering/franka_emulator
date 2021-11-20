@@ -1,10 +1,10 @@
 #include "../../include/franka_emulator/emulator/thread.h"
 #include <stdexcept>
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Thread::Thread()
+FRANKA_EMULATOR::emulator::Thread::Thread()
 {}
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Thread::Thread(int priority, void *data, void*(*function)(void*))
+FRANKA_EMULATOR::emulator::Thread::Thread(int priority, void *data, void*(*function)(void*))
 {
     if (pthread_attr_init(&_attributes) != 0) throw std::runtime_error("franka_emulator::emulator::Thread::Thread: pthread_attr_init failed");
     _attributes_created = true;
@@ -17,7 +17,7 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Thread::Thread(int priority, void *data, voi
     _thread_created = true;
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Thread &FRANKA_EMULATOR_CXX_NAME::emulator::Thread::operator=(Thread &&other)
+FRANKA_EMULATOR::emulator::Thread &FRANKA_EMULATOR::emulator::Thread::operator=(Thread &&other)
 {
     if (_attributes_created) { pthread_attr_destroy(&_attributes); _attributes_created = false; }
     _attributes_created = other._attributes_created; other._attributes_created = false;
@@ -27,7 +27,7 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Thread &FRANKA_EMULATOR_CXX_NAME::emulator::
     return *this;
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Thread::join()
+void FRANKA_EMULATOR::emulator::Thread::join()
 {
     if (_thread_created)
     {
@@ -36,7 +36,7 @@ void FRANKA_EMULATOR_CXX_NAME::emulator::Thread::join()
     }
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Thread::~Thread()
+FRANKA_EMULATOR::emulator::Thread::~Thread()
 {
     if (_attributes_created)
     {

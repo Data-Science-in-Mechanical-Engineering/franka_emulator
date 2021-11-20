@@ -4,10 +4,10 @@
 #include <string.h>
 #include <stdexcept>
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Shared::Shared()
+FRANKA_EMULATOR::emulator::Shared::Shared()
 {}
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Shared::Shared(std::string name, bool create)
+FRANKA_EMULATOR::emulator::Shared::Shared(std::string name, bool create)
 {
     _file = shm_open(name.c_str(), create ? (O_CREAT | O_RDWR) : O_RDWR, 0644);
     if (_file < 0) throw std::runtime_error("franka_emulator::emulator::Shared::open: shm_open failed");
@@ -17,7 +17,7 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Shared::Shared(std::string name, bool create
     memset(_data, 0, sizeof(SharedData));
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Shared &FRANKA_EMULATOR_CXX_NAME::emulator::Shared::operator=(Shared &&other)
+FRANKA_EMULATOR::emulator::Shared &FRANKA_EMULATOR::emulator::Shared::operator=(Shared &&other)
 {
     close();
     _name = other._name; other._name.clear();
@@ -26,20 +26,20 @@ FRANKA_EMULATOR_CXX_NAME::emulator::Shared &FRANKA_EMULATOR_CXX_NAME::emulator::
     return *this;
 }
 
-void FRANKA_EMULATOR_CXX_NAME::emulator::Shared::close()
+void FRANKA_EMULATOR::emulator::Shared::close()
 {
     if (_data != MAP_FAILED) { munmap(_data, sizeof(SharedData)); _data = MAP_FAILED; }
     if (_file >= 0) { shm_unlink(_name.c_str()); _file = -1; }
     _name.clear();
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::SharedData *FRANKA_EMULATOR_CXX_NAME::emulator::Shared::data()
+FRANKA_EMULATOR::emulator::SharedData *FRANKA_EMULATOR::emulator::Shared::data()
 {
     if (_data == MAP_FAILED) throw std::runtime_error("franka_emulator::emulator::Shared::data: shared memory was not opened");
     return (SharedData*)_data;
 }
 
-FRANKA_EMULATOR_CXX_NAME::emulator::Shared::~Shared()
+FRANKA_EMULATOR::emulator::Shared::~Shared()
 {
     close();
 }

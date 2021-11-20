@@ -13,7 +13,7 @@
  * Contains the franka::RobotState types.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 /**
  * Describes the robot's current mode.
@@ -378,6 +378,6 @@ struct RobotState {
  *
  * @return Ostream instance
  */
-std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state);
+std::ostream& operator<<(std::ostream& ostream, const FRANKA_EMULATOR::RobotState& robot_state);
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

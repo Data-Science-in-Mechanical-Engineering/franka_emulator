@@ -15,7 +15,7 @@
  * Contains model library types.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 /**
  * Enumerates the seven joints, the flange, and the end effector of a robot.
@@ -63,7 +63,7 @@ class Model {
    *
    * @throw ModelException if the model library cannot be loaded.
    */
-  explicit Model(FRANKA_EMULATOR_CXX_NAME::Network& network);
+  explicit Model(FRANKA_EMULATOR::Network& network);
 
   /**
    * Move-constructs a new Model instance.
@@ -96,7 +96,7 @@ class Model {
    *
    * @return Vectorized 4x4 pose matrix, column-major.
    */
-  std::array<double, 16> pose(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const;
+  std::array<double, 16> pose(Frame frame, const FRANKA_EMULATOR::RobotState& robot_state) const;
 
   /**
    * Gets the 4x4 pose matrix for the given frame in base frame.
@@ -127,7 +127,7 @@ class Model {
    *
    * @return Vectorized 6x7 Jacobian, column-major.
    */
-  std::array<double, 42> bodyJacobian(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const;
+  std::array<double, 42> bodyJacobian(Frame frame, const FRANKA_EMULATOR::RobotState& robot_state) const;
 
   /**
    * Gets the 6x7 Jacobian for the given frame, relative to that frame.
@@ -158,7 +158,7 @@ class Model {
    *
    * @return Vectorized 6x7 Jacobian, column-major.
    */
-  std::array<double, 42> zeroJacobian(Frame frame, const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const;
+  std::array<double, 42> zeroJacobian(Frame frame, const FRANKA_EMULATOR::RobotState& robot_state) const;
 
   /**
    * Gets the 6x7 Jacobian for the given joint relative to the base frame.
@@ -186,7 +186,7 @@ class Model {
    *
    * @return Vectorized 7x7 mass matrix, column-major.
    */
-  std::array<double, 49> mass(const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const noexcept;
+  std::array<double, 49> mass(const FRANKA_EMULATOR::RobotState& robot_state) const noexcept;
 
   /**
    * Calculates the 7x7 mass matrix. Unit: \f$[kg \times m^2]\f$.
@@ -216,7 +216,7 @@ class Model {
    *
    * @return Coriolis force vector.
    */
-  std::array<double, 7> coriolis(const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state) const noexcept;
+  std::array<double, 7> coriolis(const FRANKA_EMULATOR::RobotState& robot_state) const noexcept;
 
   /**
    * Calculates the Coriolis force vector (state-space equation): \f$ c= C \times
@@ -269,7 +269,7 @@ class Model {
    *
    * @return Gravity vector.
    */
-  std::array<double, 7> gravity(const FRANKA_EMULATOR_CXX_NAME::RobotState& robot_state,
+  std::array<double, 7> gravity(const FRANKA_EMULATOR::RobotState& robot_state,
                                 const std::array<double, 3>& gravity_earth = {
                                     {0., 0., -9.81}}) const noexcept;
 
@@ -281,8 +281,9 @@ class Model {
 private:
   size_t _joint_frame_id[7];
   size_t _link_frame_id[7];
-  pinocchio::Model _model;
+  mutable pinocchio::Model _model;
   mutable pinocchio::Data _data;
+  pinocchio::Inertia _initial_end_inertia;
 };
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR

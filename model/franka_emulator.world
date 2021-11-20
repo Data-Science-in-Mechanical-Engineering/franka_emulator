@@ -10,9 +10,9 @@
       <uri>model://ground_plane</uri>
     </include>
 
-    <model name="franka_model">
+    <model name="franka_emulator">
       <include>
-        <uri>model://model</uri>
+        <uri>model://franka_emulator</uri>
       </include>
       <plugin name="franka_emulator_plugin" filename="libfranka_emulator_plugin.so"/>
     </model>

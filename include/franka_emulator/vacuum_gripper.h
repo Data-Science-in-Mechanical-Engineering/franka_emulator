@@ -14,7 +14,7 @@
  * Contains the franka::VacuumGripper type.
  */
 
-namespace FRANKA_EMULATOR_CXX_NAME {
+namespace FRANKA_EMULATOR {
 
 class Network;
 
@@ -129,4 +129,4 @@ class VacuumGripper {
   /// @endcond
 };
 
-}  // namespace FRANKA_EMULATOR_CXX_NAME
+}  // namespace FRANKA_EMULATOR
