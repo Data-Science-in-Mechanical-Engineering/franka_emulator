@@ -279,8 +279,8 @@ class Model {
   /// @endcond  
 
 private:
-  size_t _joint_frame_id[7];
-  size_t _link_frame_id[7];
+  size_t _joint_frame_id[8]; //Beginning with panda_joint1, ending with virtual panda_joint8
+  size_t _link_frame_id[8];  //Beginning with panda_link1, ending with virtual panda_link8
   mutable pinocchio::Model _model;
   mutable pinocchio::Data _data;
   pinocchio::Inertia _initial_end_inertia;
