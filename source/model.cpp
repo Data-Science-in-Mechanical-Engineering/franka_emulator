@@ -74,6 +74,8 @@ FRANKA_EMULATOR::Model::Model(Model &&other) noexcept
     _model = other._model;
     _data = other._data;
     _initial_end_inertia = other._initial_end_inertia;
+    for (size_t i = 0; i < 8; i++) _joint_frame_id[i] = other._joint_frame_id[i];
+    for (size_t i = 0; i < 8; i++) _link_frame_id[i] = other._link_frame_id[i];
 }
 
 FRANKA_EMULATOR::Model& FRANKA_EMULATOR::Model::operator=(Model&&) noexcept
