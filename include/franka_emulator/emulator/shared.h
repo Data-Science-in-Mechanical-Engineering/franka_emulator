@@ -1,6 +1,9 @@
 #pragma once
 
+#include "robot_protocol.h"
+#include "gripper_protocol.h"
 #include "../robot_state.h"
+#include "../gripper_state.h"
 #include <sys/mman.h>
 #include <string>
 
@@ -10,7 +13,11 @@ namespace FRANKA_EMULATOR
     {
         struct SharedData
         {
-            RobotState robot_state;
+            RobotRequest robot_request;
+            RobotResponse robot_response;
+
+            GripperRequest gripper_request;
+            GripperResponse gripper_response;
         };
 
         class Shared

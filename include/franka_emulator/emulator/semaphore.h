@@ -22,6 +22,7 @@ namespace FRANKA_EMULATOR
             void timedwait(int nsec);
             void post();
             void limitedpost(int limit);
+            int value();
             ~Semaphore();
         };
     }

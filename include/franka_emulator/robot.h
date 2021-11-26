@@ -12,6 +12,7 @@
 
 #include <functional>
 #include <string>
+#include <atomic>
 
 /**
  * @file robot.h
@@ -695,10 +696,14 @@ private:
   Callback *_callback           = nullptr;
   void _control();
 
-  emulator::Semaphore _plugin_to_robot_mutex;
-  emulator::Semaphore _plugin_to_robot_condition;
-  emulator::Semaphore _robot_to_plugin_mutex;
-  emulator::Semaphore _robot_to_plugin_condition;
+  std::atomic<bool> _command_running;  //Used to lock functions
+  bool _control_running = false;       //Used by stop() and control(). Stop is not a request to gazebo, it just sets this flag
+  emulator::Semaphore _request_mutex;
+  emulator::Semaphore _response_mutex;
+  emulator::Semaphore _request_condition;
+  emulator::Semaphore _response_condition;
+  emulator::Semaphore _control_call_condition;
+  emulator::Semaphore _control_return_condition;
   emulator::Shared _shared;
 };
 

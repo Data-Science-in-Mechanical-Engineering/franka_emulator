@@ -1,5 +1,6 @@
 #include "../include/franka_emulator/model.h"
 #include "../include/franka_emulator/emulator/network.h"
+#include "../include/franka_emulator/emulator/constants.h"
 #if defined(Franka_FOUND) && !defined(FRANKA_EMULATOR_IMITATE)
     #include <franka/model.h>
 #endif
@@ -473,9 +474,9 @@ int main(int argc, char **argv)
     
     FRANKA_EMULATOR::Network emulator_network;
     emulator_model = new FRANKA_EMULATOR::Model(emulator_network);
-    emulator_state.m_total = 0.73;
-    emulator_state.I_total = std::array<double, 9>({ 0.001, 0.0, 0.0, 0.0025, 0.0, 0.0, 0.0, 0.0017 });
-    emulator_state.F_T_EE = std::array<double ,16>({ 0.7071, -0.7071, 0, 0, 0.7071, 0.7071, 0, 0, 0, 0, 1, 0, 0, 0, 0.1034, 1 });
-    emulator_state.EE_T_K = std::array<double ,16>({ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 });
+    emulator_state.m_total = FRANKA_EMULATOR::emulator::gripper_mass;
+    emulator_state.I_total = FRANKA_EMULATOR::emulator::gripper_inertia;
+    emulator_state.F_T_EE = FRANKA_EMULATOR::emulator::gripper_frame;
+    emulator_state.EE_T_K = FRANKA_EMULATOR::emulator::stiffness_frame;
     return RUN_ALL_TESTS();
 }

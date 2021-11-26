@@ -2,11 +2,14 @@
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 #pragma once
 
+#include "emulator/shared.h"
+#include "emulator/semaphore.h"
+#include "gripper_state.h"
+
 #include <cstdint>
 #include <memory>
 #include <string>
-
-#include "gripper_state.h"
+#include <mutex>
 
 /**
  * @file gripper.h
@@ -146,6 +149,16 @@ class Gripper {
   Gripper(const Gripper&) = delete;
   Gripper& operator=(const Gripper&) = delete;
   /// @endcond
+
+private:
+  mutable std::mutex _atomic_mutex;
+  mutable std::mutex _continuous_mutex;
+  mutable emulator::Semaphore _request_mutex;
+  mutable emulator::Semaphore _response_mutex;
+  mutable emulator::Semaphore _request_condition;
+  mutable emulator::Semaphore _atomic_response_condition;
+  mutable emulator::Semaphore _continuous_response_condition;
+  mutable emulator::Shared _shared;
 };
 
 }  // namespace FRANKA_EMULATOR

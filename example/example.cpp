@@ -1,4 +1,5 @@
 #include "../include/franka_emulator/robot.h"
+#include "../include/franka_emulator/gripper.h"
 #include "../include/franka_emulator/model.h"
 #include <iostream>
 
@@ -12,6 +13,12 @@ int _main(int argc, char **argv)
 
     try
     {
+        //Gripper example
+        FRANKA_EMULATOR::Gripper gripper(argv[1]);
+        gripper.move(0.1, 0.01);
+        gripper.move(0.0, 0.01);
+
+        //Robot example
         FRANKA_EMULATOR::Robot robot(argv[1]);
         FRANKA_EMULATOR::Model model = robot.loadModel();
         size_t call = 0;

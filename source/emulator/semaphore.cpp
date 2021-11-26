@@ -2,6 +2,9 @@
 #include <fcntl.h>
 #include <stdexcept>
 
+#include <errno.h>
+#include <iostream>
+
 FRANKA_EMULATOR::emulator::Semaphore::Semaphore()
 {}
 
@@ -9,7 +12,7 @@ FRANKA_EMULATOR::emulator::Semaphore::Semaphore(const std::string name, bool cre
 {
     _name = name;
     _semaphore = sem_open(_name.c_str(), create ? O_CREAT : 0, 0644, value);
-    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::Semaphore: sem_open failed");
+    if (_semaphore == SEM_FAILED) { std::cout << errno; throw std::runtime_error("franka_emulator::emulator::Semaphore::Semaphore: sem_open failed"); }
     if (create)
     {
         int current_value;
@@ -31,9 +34,9 @@ void FRANKA_EMULATOR::emulator::Semaphore::close()
 {
     if (_semaphore != SEM_FAILED)
     {
-        sem_unlink(_name.c_str());
-        _name.clear();
+        sem_close(_semaphore);
         _semaphore = SEM_FAILED;
+        _name.clear();
     }
 }
 
@@ -65,6 +68,14 @@ void FRANKA_EMULATOR::emulator::Semaphore::limitedpost(int limit)
     int value;
     sem_getvalue(_semaphore, &value);
     if (value < limit) sem_post(_semaphore);
+}
+
+int FRANKA_EMULATOR::emulator::Semaphore::value()
+{
+    if (_semaphore == SEM_FAILED) throw std::runtime_error("franka_emulator::emulator::Semaphore::value: semaphore was not opened");
+    int val;
+    sem_getvalue(_semaphore, &val);
+    return val;
 }
 
 FRANKA_EMULATOR::emulator::Semaphore::~Semaphore()
