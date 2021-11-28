@@ -20,7 +20,7 @@ else()
   endif()
 endif()
 
-if (model/franka_emulator/model.urdf IS_NEWER_THAN model/franka_emulator/model.sdf)
+if (${CMAKE_SOURCE_DIR}/model/franka_emulator/model.urdf IS_NEWER_THAN ${CMAKE_SOURCE_DIR}/model/franka_emulator/model.sdf)
   execute_process(COMMAND gz sdf -p ${CMAKE_SOURCE_DIR}/model/franka_emulator/model.urdf OUTPUT_FILE ${CMAKE_SOURCE_DIR}/model/franka_emulator/model.sdf)
 endif()
 

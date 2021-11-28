@@ -66,14 +66,12 @@ FRANKA_EMULATOR::Model::Model(FRANKA_EMULATOR::Network&)
         if (!_model.existFrame(name)) throw std::runtime_error("Link frame not found");
         _link_frame_id[link] = _model.getFrameId(name);
     }
-    _initial_end_inertia = _model.inertias[7];
 }
 
 FRANKA_EMULATOR::Model::Model(Model &&other) noexcept
 {
     _model = other._model;
     _data = other._data;
-    _initial_end_inertia = other._initial_end_inertia;
     for (size_t i = 0; i < 8; i++) _joint_frame_id[i] = other._joint_frame_id[i];
     for (size_t i = 0; i < 8; i++) _link_frame_id[i] = other._link_frame_id[i];
 }
@@ -97,43 +95,26 @@ std::array<double, 16> FRANKA_EMULATOR::Model::pose(
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
-    std::array<double, 16> result;
+    
     pinocchio::forwardKinematics(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]));
+    pinocchio::SE3 placement;
     if (static_cast<size_t>(frame) >= static_cast<size_t>(Frame::kJoint1) && static_cast<size_t>(frame) <= static_cast<size_t>(Frame::kJoint7))
     {
-        pinocchio::SE3 se3 = _data.oMi[static_cast<size_t>(frame) + 1];
-        Eigen::Affine3d transform;
-        transform.linear() = se3.rotation_impl();
-        transform.translation() = se3.translation_impl();
-        Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
+        placement = _data.oMi[static_cast<size_t>(frame) + 1];
     }
-    else if (frame == Frame::kFlange)
+    else if (frame == Frame::kFlange || frame == Frame::kEndEffector || frame == Frame::kStiffness)
     {
-        pinocchio::SE3 se3 = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]);
-        Eigen::Affine3d transform;
-        transform.linear() = se3.rotation_impl();
-        transform.translation() = se3.translation_impl();
-        Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
-    }
-    else if (frame == Frame::kEndEffector)
-    {
-        pinocchio::SE3 se3 = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]);
-        Eigen::Affine3d transform;
-        transform.linear() = se3.rotation_impl();
-        transform.translation() = se3.translation_impl();
-        transform = transform * Eigen::Affine3d(Eigen::Matrix4d::Map(&F_T_EE[0]));
-        Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
-    }
-    else if (frame == Frame::kStiffness)
-    {
-        pinocchio::SE3 se3 = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]);
-        Eigen::Affine3d transform;
-        transform.linear() = se3.rotation_impl();
-        transform.translation() = se3.translation_impl();
-        transform = transform * Eigen::Affine3d(Eigen::Matrix4d::Map(&F_T_EE[0])) * Eigen::Affine3d(Eigen::Matrix4d::Map(&EE_T_K[0]));
-        Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
+        placement = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]);
+        if (frame == Frame::kEndEffector || frame == Frame::kStiffness) placement = placement.act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&F_T_EE[0])));
+        if (frame == Frame::kStiffness) placement = placement.act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&EE_T_K[0])));
     }
     else throw std::runtime_error("franka_emulator::Model::pose: Invalid frame");
+
+    Eigen::Affine3d transform;
+    transform.linear() = placement.rotation_impl();
+    transform.translation() = placement.translation_impl();    
+    std::array<double, 16> result;
+    Eigen::Matrix4d::Map(&result[0]) = transform.matrix();
     return result;
 }
 
@@ -148,23 +129,30 @@ std::array<double, 42> FRANKA_EMULATOR::Model::bodyJacobian(
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
+    Eigen::Matrix<double, 6, 7> result_matrix = Eigen::Matrix<double, 6, 7>::Zero();
     if (static_cast<size_t>(frame) >= static_cast<size_t>(Frame::kJoint1) && static_cast<size_t>(frame) <= static_cast<size_t>(Frame::kJoint7))
     {
-        Eigen::Matrix<double, 6, 7> result_matrix = Eigen::Matrix<double, 6, 7>::Zero();
         pinocchio::computeJointJacobian(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]), static_cast<size_t>(frame) + 1, result_matrix);
-        std::array<double, 42> result;
-        Eigen::Matrix<double, 6, 7>::Map(&result[0]) = result_matrix;
-        return result;
     }
     else if (frame == Frame::kFlange)
     {
-        return std::array<double, 42>();
+        pinocchio::computeFrameJacobian(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]), _joint_frame_id[7], result_matrix);
     }
     else if (frame == Frame::kEndEffector || frame == Frame::kStiffness)
     {
-        return std::array<double, 42>();
+        pinocchio::SE3 placement = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]).act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&F_T_EE[0])));
+        if (frame == Frame::kStiffness) placement = placement.act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&EE_T_K[0])));
+        for (size_t i = 0; i < 7; i++)
+        {
+            result_matrix.block<3, 1>(0, i) = placement.rotation_impl().transpose() * (_data.oMi[i+1].rotation_impl().col(2).cross(placement.translation_impl() - _data.oMi[1+i].translation_impl()));
+            result_matrix.block<3, 1>(3, i) = placement.rotation_impl().transpose() * _data.oMi[i+1].rotation_impl().col(2);
+        }
     }
-    else throw std::runtime_error("franka_emulator::Model::zeroJacobian: Invalid frame");
+    else throw std::runtime_error("franka_emulator::Model::bodyJacobian: Invalid frame");
+    
+    std::array<double, 42> result;
+    Eigen::Matrix<double, 6, 7>::Map(&result[0]) = result_matrix;
+    return result;
 }
 
 std::array<double, 42> FRANKA_EMULATOR::Model::zeroJacobian(Frame frame, const FRANKA_EMULATOR::RobotState& robot_state) const
@@ -178,24 +166,36 @@ std::array<double, 42> FRANKA_EMULATOR::Model::zeroJacobian(
     const std::array<double, 16>& F_T_EE,
     const std::array<double, 16>& EE_T_K) const
 {
+    Eigen::Matrix<double, 6, 7> result_matrix = Eigen::Matrix<double, 6, 7>::Zero();
     if (static_cast<size_t>(frame) >= static_cast<size_t>(Frame::kJoint1) && static_cast<size_t>(frame) <= static_cast<size_t>(Frame::kJoint7))
     {
-        Eigen::Matrix<double, 6, 7> result_matrix = Eigen::Matrix<double, 6, 7>::Zero();
-        computeJointJacobians(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]));
-        getJointJacobian(_model, _data, static_cast<size_t>(frame) + 1, pinocchio::ReferenceFrame::WORLD, result_matrix);
-        std::array<double, 42> result;
-        Eigen::Matrix<double, 6, 7>::Map(&result[0]) = result_matrix;
-        return result;
+        pinocchio::forwardKinematics(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]));
+        pinocchio::computeJointJacobian(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]), static_cast<size_t>(frame) + 1, result_matrix);
+        result_matrix.block<3, 7>(0,0) = _data.oMi[static_cast<size_t>(frame) + 1].rotation_impl() * result_matrix.block<3, 7>(0,0);
+        result_matrix.block<3, 7>(3,0) = _data.oMi[static_cast<size_t>(frame) + 1].rotation_impl() * result_matrix.block<3, 7>(3,0);
     }
     else if (frame == Frame::kFlange)
     {
-        return std::array<double, 42>();
+        pinocchio::SE3 placement = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]);
+        pinocchio::computeFrameJacobian(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]), _joint_frame_id[7], result_matrix);
+        result_matrix.block<3, 7>(0,0) = placement.rotation_impl() * result_matrix.block<3, 7>(0,0);
+        result_matrix.block<3, 7>(3,0) = placement.rotation_impl() * result_matrix.block<3, 7>(3,0);
     }
     else if (frame == Frame::kEndEffector || frame == Frame::kStiffness)
     {
-        return std::array<double, 42>();
+        pinocchio::SE3 placement = pinocchio::updateFramePlacement(_model, _data, _joint_frame_id[7]).act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&F_T_EE[0])));
+        if (frame == Frame::kStiffness) placement = placement.act_impl(pinocchio::SE3(Eigen::Matrix4d::Map(&EE_T_K[0])));
+        for (size_t i = 0; i < 7; i++)
+        {
+            result_matrix.block<3, 1>(0, i) = _data.oMi[i+1].rotation_impl().col(2).cross(placement.translation_impl() - _data.oMi[i+1].translation_impl());
+            result_matrix.block<3, 1>(3, i) = _data.oMi[i+1].rotation_impl().col(2);
+        }
     }
     else throw std::runtime_error("franka_emulator::Model::zeroJacobian: Invalid frame");
+
+    std::array<double, 42> result;
+    Eigen::Matrix<double, 6, 7>::Map(&result[0]) = result_matrix;
+    return result;
 }
 
 std::array<double, 49> FRANKA_EMULATOR::Model::mass(const FRANKA_EMULATOR::RobotState& robot_state) const noexcept
@@ -209,7 +209,7 @@ std::array<double, 49> FRANKA_EMULATOR::Model::mass(
     double m_total,
     const std::array<double, 3>& F_x_Ctotal) const noexcept
 {
-    _model.inertias[7] = _initial_end_inertia;
+    pinocchio::Inertia initial_end_inertia = _model.inertias[7];
     _model.inertias[7].mass() += m_total;
     _model.inertias[7].inertia().data()[0] += I_total[0];                    //xx
     _model.inertias[7].inertia().data()[1] += (I_total[1] + I_total[3]) / 2; //xy
@@ -218,6 +218,7 @@ std::array<double, 49> FRANKA_EMULATOR::Model::mass(
     _model.inertias[7].inertia().data()[4] += (I_total[5] + I_total[7]) / 2; //yz
     _model.inertias[7].inertia().data()[5] += I_total[8];                    //zz
     Eigen::Matrix<double, 7, 7> result_matrix = pinocchio::crba(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]));
+    _model.inertias[7] = initial_end_inertia;
     result_matrix.triangularView<Eigen::StrictlyLower>() = result_matrix.transpose().triangularView<Eigen::StrictlyLower>();
     std::array<double, 49> result;
     Eigen::Matrix<double, 7, 7>::Map(&result[0]) = result_matrix;
@@ -236,7 +237,7 @@ std::array<double, 7> FRANKA_EMULATOR::Model::coriolis(
     double m_total,
     const std::array<double, 3>& F_x_Ctotal) const noexcept
 {
-    _model.inertias[7] = _initial_end_inertia;
+    pinocchio::Inertia initial_end_inertia = _model.inertias[7];
     _model.inertias[7].mass() += m_total;
     _model.inertias[7].inertia().data()[0] += I_total[0];                    //xx
     _model.inertias[7].inertia().data()[1] += (I_total[1] + I_total[3]) / 2; //xy
@@ -245,6 +246,7 @@ std::array<double, 7> FRANKA_EMULATOR::Model::coriolis(
     _model.inertias[7].inertia().data()[4] += (I_total[5] + I_total[7]) / 2; //yz
     _model.inertias[7].inertia().data()[5] += I_total[8];                    //zz
     Eigen::Matrix<double, 7, 7> result_matrix = pinocchio::computeCoriolisMatrix(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]), Eigen::Matrix<double, 7, 1>::Map(&dq[0]));
+    _model.inertias[7] = initial_end_inertia;
     std::array<double, 7> result;
     Eigen::Matrix<double, 7, 1>::Map(&result[0]) = result_matrix * Eigen::Matrix<double, 7, 1>::Map(&dq[0]);
     return result;
@@ -257,10 +259,11 @@ std::array<double, 7> FRANKA_EMULATOR::Model::gravity(
     const std::array<double, 3>& gravity_earth) const noexcept
 {
     _model.gravity.linear_impl() = Eigen::Matrix<double, 3, 1>::Map(&gravity_earth[0]);
-    _model.inertias[7] = _initial_end_inertia;
+    double initial_end_mass = _model.inertias[7].mass();
     _model.inertias[7].mass() += m_total;
     std::array<double, 7> result;
     Eigen::Matrix<double, 7, 1>::Map(&result[0]) = pinocchio::computeGeneralizedGravity(_model, _data, Eigen::Matrix<double, 7, 1>::Map(&q[0]));
+    _model.inertias[7].mass() = initial_end_mass;
     return result;
 }
 

@@ -283,7 +283,6 @@ private:
   size_t _link_frame_id[8];  //Beginning with panda_link1, ending with virtual panda_link8
   mutable pinocchio::Model _model;
   mutable pinocchio::Data _data;
-  pinocchio::Inertia _initial_end_inertia;
 };
 
 }  // namespace FRANKA_EMULATOR
