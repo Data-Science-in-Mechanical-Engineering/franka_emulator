@@ -1,6 +1,6 @@
 if(NOT TARGET Franka::@FRANKA_EMULATOR_NAME_UPPERCASE@)
 	get_filename_component(FrankaEmulator_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-	include("${FrankaEmulator_CMAKE_DIR}/FrankaTargets.cmake")
+	include("${FrankaEmulator_CMAKE_DIR}/@FRANKA_EMULATOR_NAME_UPPERCASE@Targets.cmake")
 	unset(FrankaEmulator_CMAKE_DIR)
 endif()
 

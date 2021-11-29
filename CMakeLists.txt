@@ -7,12 +7,15 @@ cmake_policy(SET CMP0048 NEW)
 include(CMakePackageConfigHelpers)
 
 if(FRANKA_EMULATOR_IMITATE)
+  project(libfranka VERSION 0.8.0)
   set(FRANKA_EMULATOR_NAME_UPPERCASE Franka)
   set(FRANKA_EMULATOR_NAME_LOWERCASE franka)
   if (NOT EXISTS ${CMAKE_SOURCE_DIR}/include/franka)
     execute_process(COMMAND ln -s ${CMAKE_SOURCE_DIR}/include/franka_emulator ${CMAKE_SOURCE_DIR}/include/franka)
   endif()
+
 else()
+  project(libfranka_emulator VERSION 1.0.0)
   set(FRANKA_EMULATOR_NAME_UPPERCASE FrankaEmulator)
   set(FRANKA_EMULATOR_NAME_LOWERCASE franka_emulator)
   if (EXISTS ${CMAKE_SOURCE_DIR}/include/franka)
@@ -24,8 +27,7 @@ if (${CMAKE_SOURCE_DIR}/model/franka_emulator/model.urdf IS_NEWER_THAN ${CMAKE_S
   execute_process(COMMAND gz sdf -p ${CMAKE_SOURCE_DIR}/model/franka_emulator/model.urdf OUTPUT_FILE ${CMAKE_SOURCE_DIR}/model/franka_emulator/model.sdf)
 endif()
 
-project(lib${FRANKA_EMULATOR_NAME_LOWERCASE} VERSION 0.8.0)
-set(FRANKA_EMULATOR_VERSION_MAJOR 0)
+set(FRANKA_EMULATOR_VERSION_MAJOR 1)
 set(FRANKA_EMULATOR_VERSION_MINOR 0)
 set(FRANKA_EMULATOR_VERSION_PATCH 0)
 
@@ -154,7 +156,7 @@ if (GTest_FOUND)
 endif()
 
 # franka_emulator.sh
-configure_file                (source/emulator/franka_emulator.sh franka_emulator.sh)
+configure_file                (source/emulator/franka_emulator.sh franka_emulator.sh COPYONLY)
 
 # export
 add_library                      (Franka::${FRANKA_EMULATOR_NAME_UPPERCASE} ALIAS franka_emulator)
@@ -169,4 +171,4 @@ install                          (EXPORT ${FRANKA_EMULATOR_NAME_UPPERCASE}Target
 install                          (FILES ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}Config.cmake ${CMAKE_BINARY_DIR}/${FRANKA_EMULATOR_NAME_UPPERCASE}ConfigVersion.cmake DESTINATION lib/cmake/${FRANKA_EMULATOR_NAME_UPPERCASE})
 install                          (DIRECTORY ${PROJECT_SOURCE_DIR}/include/franka_emulator/ DESTINATION include/${FRANKA_EMULATOR_NAME_LOWERCASE})
 install                          (DIRECTORY ${PROJECT_SOURCE_DIR}/model/ DESTINATION share/franka_emulator/model)
-install                          (FILES ${CMAKE_BINARY_DIR}/franka_emulator.sh DESTINATION bin)
+install                          (PROGRAMS ${CMAKE_BINARY_DIR}/franka_emulator.sh DESTINATION bin)
