@@ -14,10 +14,11 @@ namespace FRANKA_EMULATOR
         static const double gripper_homing_speed = 0.1;
         static const double gripper_minimum_force = 0.1;
         static const double gripper_maximum_force = 20.0;
-        static const double gripper_control_stiffness = 1.0;
-        static const double gripper_control_damping = 2.0;
+        static const double gripper_control_stiffness = 10.0;
+        static const double gripper_control_damping = 6.0;
         static const double gripper_control_mismatch_treshold = 0.01;
         static const double gripper_control_move_mismatch = 0.001;
+        static const unsigned int gripper_temperature = 25;
 
         static const std::array<double, 16> stiffness_frame{{ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }};
     }
