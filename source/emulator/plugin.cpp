@@ -193,37 +193,37 @@ void FRANKA_EMULATOR::emulator::Plugin::_process_gripper_request(const gazebo::c
     else if (_shared.data()->gripper_request.typ == GripperRequest::Type::homing)
     {
         _gripper_request_mutex.limitedpost(1);
-        _gripper_target_speed = gripper_homing_speed;
-        _gripper_force = gripper_maximum_force;
-        _gripper_opening = true;
-        _gripper_current_target_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
         _gripper_state = GripperState::homing;
+        _gripper_opening = true;
+        _gripper_current_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
+        _gripper_history_size = 0;
     }
     else if (_shared.data()->gripper_request.typ == GripperRequest::Type::move)
     {
-        _gripper_target_width = std::min(std::max(_shared.data()->gripper_request.width, 0.0), gripper_maximum_width);
-        _gripper_target_speed = std::min(std::max(abs(_shared.data()->gripper_request.speed), gripper_minimum_speed), gripper_maximum_speed);
+        _gripper_width = std::min(std::max(_shared.data()->gripper_request.width, 0.0), gripper_maximum_width);
+        _gripper_speed = std::min(std::max(abs(_shared.data()->gripper_request.speed), gripper_minimum_speed), gripper_maximum_speed);
         
         _gripper_request_mutex.limitedpost(1);
-        _gripper_force = gripper_maximum_force;
-        _gripper_opening = _gripper_target_width > (_fingers[0]->Position(0) + _fingers[1]->Position(0));
-        if (!_gripper_opening) _gripper_target_speed = -_gripper_target_speed;
-        _gripper_current_target_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
         _gripper_state = GripperState::moving;
+        _gripper_opening = _gripper_width > (_fingers[0]->Position(0) + _fingers[1]->Position(0));
+        if (!_gripper_opening) _gripper_speed *= -1;
+        _gripper_current_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
+        _gripper_history_size = 0;
     }
     else if (_shared.data()->gripper_request.typ == GripperRequest::Type::grasp)
     {
-        _gripper_target_width = std::min(std::max(_shared.data()->gripper_request.width, 0.0), gripper_maximum_width);
-        _gripper_target_speed = std::min(std::max(abs(_shared.data()->gripper_request.speed), gripper_minimum_speed), gripper_maximum_speed);
+        _gripper_width = std::min(std::max(_shared.data()->gripper_request.width, 0.0), gripper_maximum_width);
+        _gripper_speed = std::min(std::max(abs(_shared.data()->gripper_request.speed), gripper_minimum_speed), gripper_maximum_speed);
         _gripper_force = std::min(std::max(abs(_shared.data()->gripper_request.force), gripper_minimum_force), gripper_maximum_force);
         _gripper_epsilon_inner = std::max(_shared.data()->gripper_request.epsilon_inner, 0.0);
         _gripper_epsilon_outer = std::max(_shared.data()->gripper_request.epsilon_outer, 0.0);
         
         _gripper_request_mutex.limitedpost(1);
-        _gripper_opening = _gripper_target_width > (_fingers[0]->Position(0) + _fingers[1]->Position(0));
-        if (!_gripper_opening) _gripper_target_speed = -_gripper_target_speed;
-        _gripper_current_target_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
         _gripper_state = GripperState::grasping;
+        _gripper_opening = _gripper_width > (_fingers[0]->Position(0) + _fingers[1]->Position(0));
+        if (!_gripper_opening) _gripper_speed *= -1;
+        _gripper_current_width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
+        _gripper_history_size = 0;
     }
     else //GripperRequest::Type::stop
     {
@@ -273,61 +273,78 @@ void FRANKA_EMULATOR::emulator::Plugin::_control_robot(const gazebo::common::Tim
 void FRANKA_EMULATOR::emulator::Plugin::_control_gripper()
 {
     double width = _fingers[0]->Position(0) + _fingers[1]->Position(0);
+    double speed = _fingers[0]->GetVelocity(0) + _fingers[1]->GetVelocity(0);
+    double force = 0.0;
+
     if (_gripper_state == GripperState::moving)
     {
-        if (((_gripper_opening && width >= _gripper_target_width) || (_gripper_opening && _gripper_previous_width <= width && width + gripper_control_move_mismatch >= _gripper_target_width))
-        || ((!_gripper_opening && width <= _gripper_target_width) || (!_gripper_opening && _gripper_previous_width >= width && width - gripper_control_move_mismatch <= _gripper_target_width)))
+        force = std::max(std::min(gripper_stiffness * (_gripper_current_width - width) + gripper_damping * (_gripper_speed - speed), gripper_maximum_force), -gripper_maximum_force);
+            
+        if ((_gripper_opening && width >= _gripper_width) || (!_gripper_opening && width <= _gripper_width) || 
+        (_gripper_history_size == gripper_history_size && abs(_gripper_history[_gripper_history_pointer] - width) < abs(_gripper_speed * 0.001 * gripper_history_size * gripper_stuck_treshold)))
         {
             _gripper_response_mutex.wait();
-            _shared.data()->gripper_response.typ = GripperResponse::Type::ok;
+            _shared.data()->gripper_response.typ = (abs(width - _gripper_width) <= gripper_move_epsilon) ? GripperResponse::Type::ok : GripperResponse::Type::error;
             _gripper_continuous_response_condition.limitedpost(1);
             _gripper_state = GripperState::idle;
+            _gripper_grasped = false;
         }
+        else _gripper_current_width += _gripper_speed * 0.001;
     }
     else if (_gripper_state == GripperState::grasping)
     {
-        if ((_gripper_opening && _gripper_previous_width >= width) || (!_gripper_opening && _gripper_previous_width <= width))
+        force = std::max(std::min(gripper_stiffness * (_gripper_current_width - width) + gripper_damping * (_gripper_speed - speed), _gripper_force), -_gripper_force);
+            
+        if (_gripper_history_size == gripper_history_size && abs(_gripper_history[_gripper_history_pointer] - width) < abs(_gripper_speed * 0.001 * gripper_history_size * gripper_stuck_treshold))
         {
             _gripper_response_mutex.wait();
-            _gripper_grasped = (width >= _gripper_target_width - _gripper_epsilon_inner) && (width <= _gripper_target_width + _gripper_epsilon_outer);
+            _gripper_grasped = (width >= _gripper_width - _gripper_epsilon_inner) && (width <= _gripper_width + _gripper_epsilon_outer);
             _shared.data()->gripper_response.typ = _gripper_grasped ? GripperResponse::Type::ok : GripperResponse::Type::error;
             _gripper_continuous_response_condition.limitedpost(1);
             _gripper_state = GripperState::idle;
         }
+        else _gripper_current_width += 0.001 * _gripper_speed;
     }
     else if (_gripper_state == GripperState::homing)
     {
-        if (_gripper_opening && _gripper_previous_width >= width)
+        force = std::max(std::min(gripper_stiffness * (_gripper_current_width - width) + gripper_damping * ((_gripper_opening ? 1 : -1) * gripper_homing_speed - speed), gripper_maximum_force), -gripper_maximum_force);
+            
+        if (_gripper_history_size == gripper_history_size && abs(_gripper_history[_gripper_history_pointer] - width) < abs(gripper_homing_speed * 0.001 * gripper_history_size * gripper_stuck_treshold))
         {
-            _gripper_maximum_width = _gripper_previous_width;
-            _gripper_opening = false;
-            _gripper_target_speed = -_gripper_target_speed;
+            if (_gripper_opening)
+            {
+                _gripper_maximum_width = width;
+                _gripper_history_size = 0;
+                _gripper_opening = false;
+            }
+            else
+            {
+                _gripper_response_mutex.wait();
+                _gripper_continuous_response_condition.limitedpost(1);
+                _gripper_state = GripperState::idle;
+                _gripper_grasped = false;
+            }
         }
-        else if (!_gripper_opening && _gripper_previous_width <= width)
-        {
-            _gripper_response_mutex.wait();
-            _shared.data()->gripper_response.typ = GripperResponse::Type::ok;
-            _gripper_continuous_response_condition.limitedpost(1);
-            _gripper_state = GripperState::idle;
-        }
+        else _gripper_current_width += 0.001 * (_gripper_opening ? 1 : -1) * gripper_homing_speed;
     }
-
-    if (_gripper_state == GripperState::idle)
+    else //if (_gripper_state == GripperState::idle)
     {
-        _gripper_target_speed = 0.0;
-        _gripper_force = gripper_maximum_force;
+        if (_gripper_grasped)
+        {
+            force = std::max(std::min(gripper_stiffness * (_gripper_current_width - width) + gripper_damping * (_gripper_speed - speed), _gripper_force), -_gripper_force);
+            if (force != _gripper_force && force != -_gripper_force) _gripper_current_width += 0.001 * _gripper_speed;
+        }
+        else
+        {
+            force = std::max(std::min(gripper_stiffness * (_gripper_current_width - width) - gripper_damping * speed, gripper_maximum_force), -gripper_maximum_force);
+        }
     }
-
-    //Gazebo becames instable on high forces. So I am using small forces if width is near current target and high forces if it is not
-    double force;
-    if (abs(width - _gripper_current_target_width) > gripper_control_mismatch_treshold) force = _gripper_opening ? gripper_maximum_force : -gripper_maximum_force;
-    else force = gripper_control_stiffness * (_gripper_current_target_width - width) + gripper_control_damping * (_gripper_target_speed - _fingers[0]->GetVelocity(0) - _fingers[1]->GetVelocity(0));
-    force = std::max(std::min(force, _gripper_force), -_gripper_force);
+    
     _fingers[0]->SetForce(0, force);
     _fingers[1]->SetForce(0, force);
-
-    _gripper_previous_width = width;
-    _gripper_current_target_width = std::min(std::max(_gripper_current_target_width + 0.001 * _gripper_target_speed, 0.0), gripper_maximum_width);
+    _gripper_history[_gripper_history_pointer] = width;
+    if (++_gripper_history_pointer == gripper_history_size) _gripper_history_pointer = 0;
+    if (_gripper_history_size < gripper_history_size) _gripper_history_size++;
 }
 
 void FRANKA_EMULATOR::emulator::Plugin::_update(const gazebo::common::UpdateInfo &info)

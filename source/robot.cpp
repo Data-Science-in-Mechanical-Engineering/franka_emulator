@@ -19,7 +19,7 @@ FRANKA_EMULATOR::Robot::Robot(const std::string& franka_address, RealtimeConfig,
     _joint_stiffness = Eigen::Matrix<double, 7, 1>::Map(emulator::default_joint_stiffness.data());
     _joint_damping = Eigen::Matrix<double, 7, 1>::Map(emulator::default_joint_damping.data());
     
-    _command_running.store(true);
+    _command_running.store(false);
     _control_running = false;
     _shared = emulator::Shared("/franka_emulator_" + franka_address + "_memory", false);
     _request_mutex = emulator::Semaphore("/franka_emulator_" + franka_address + "_robot_request_mutex", false, 1);
@@ -63,7 +63,7 @@ FRANKA_EMULATOR::Robot::~Robot() noexcept
 void FRANKA_EMULATOR::Robot::_control()
 {
     bool expected = false;
-    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("Command already running");
+    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("franka_emulator::Robot::_control: Command already running");
     _control_running = true;
 
     //Sending reuest
@@ -339,7 +339,7 @@ void FRANKA_EMULATOR::Robot::read(std::function<bool(const RobotState&)> callbac
 FRANKA_EMULATOR::RobotState FRANKA_EMULATOR::Robot::readOnce()
 {
     bool expected = false;
-    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("Command already running");
+    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("franka_emulator::Robot::readOnce: Command already running");
     
     //Request
     _request_mutex.wait();
@@ -436,7 +436,7 @@ void FRANKA_EMULATOR::Robot::setFilters(
 void FRANKA_EMULATOR::Robot::automaticErrorRecovery()
 {
     bool expected = false;
-    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("Command already running");
+    if (!_command_running.compare_exchange_strong(expected, true)) throw ControlException("franka_emulator::Robot::automaticErrorRecovery: Command already running");
 
     //Request
     _request_mutex.wait();

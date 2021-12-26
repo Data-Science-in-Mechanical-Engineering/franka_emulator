@@ -1,4 +1,4 @@
-# Welcome to `franka_emulator 1.0.0`!
+# Welcome to `franka_emulator 1.0.1`!
 
 Here you will find a `C++` library that replaces and behaves like [libfranka](https://frankaemika.github.io/docs/libfranka.html) with one exception - the robot is virtual! It has similar `C++` and `CMake` API and is created to give developers a possibility to write programs for Panda robot without having it.
 
@@ -18,7 +18,7 @@ Usage `franka_emulator` is supposed to be very similar to usage of [libfranka](h
 #include <franka_emulator/robot.h>
 int main()
 {
-	franka_emulator::Robot robot("192.168.0.1");
+	franka_emulator::Robot robot("<IP>");
 }
 ```
 While typical `CMakeLists.txt` usage looks like:
@@ -57,7 +57,7 @@ cmake --build .
 ```
 
 ### Installation
-**Optional step 1**: Getting real-time permission
+**Step 1**: Getting real-time permission
 This can be done in various ways. As an example, the following commands will allow everyone to execute any real-time commands:
 ```
 sudo -s
@@ -87,7 +87,7 @@ For `Arch`: `yay -S linux-rt-lts` (assuming you use `yay`, proceed [here](https:
 For `Ubuntu`: Try using `sudo ./install_rt.sh` - it should download, compile and install the kernel along with `systemd-boot`. Improvise if the script fails.
 
 ### Documentation
-As the library has the same API as [libfranka](https://frankaemika.github.io/docs/index.html#), you may use [official wiki](https://frankaemika.github.io/libfranka/). However, you also can generate documentation with [Doxygen](https://www.doxygen.nl) using `doxygen` command. Generated documentation contains information of how the emulator's behavior differs from that of original [libfranka](https://frankaemika.github.io/docs/index.html#).
+As the library has the same API as [libfranka](https://frankaemika.github.io/docs/index.html#), you may use [official wiki](https://frankaemika.github.io/libfranka/). However, you also can generate documentation with [Doxygen](https://www.doxygen.nl) using `doxygen` command. Generated documentation contains information of how the emulator's behavior differs from that of original [libfranka](https://frankaemika.github.io/docs/index.html#) (look for **[Emulator]** sections).
 
 ### Contributors
  - Kyrylo Sovailo

@@ -32,16 +32,19 @@ namespace FRANKA_EMULATOR
                 grasping,
                 homing
             };
-            GripperState _gripper_state = GripperState::idle;
-            bool _gripper_opening = false;
-            bool _gripper_grasped = false;
-            double _gripper_current_target_width = 0.0;
-            double _gripper_previous_width = 0.0;
-            double _gripper_maximum_width = 0.0;
-            double _gripper_target_width = 0.0;
-            double _gripper_target_speed = 0.0;
-            double _gripper_force = gripper_maximum_force;
-            double _gripper_epsilon_inner = 0.0, _gripper_epsilon_outer = 0.0;
+            GripperState _gripper_state     = GripperState::idle;   //Gripper command
+            bool _gripper_opening           = false;                //Gripper command direction
+            double _gripper_width           = 0.0;                  //Width argument
+            double _gripper_speed           = 0.0;                  //Speed argument
+            double _gripper_force           = 0.0;                  //Force argument
+            double _gripper_epsilon_inner   = 0.0;                  //Inner epsilon argument
+            double _gripper_epsilon_outer   = 0.0;                  //Outer epsilon argument
+            bool _gripper_grasped           = false;                //Last result of grasp() and indicator if needs to apply force when idle
+            double _gripper_maximum_width   = 0.0;                  //Last result of homing()
+            double _gripper_current_width   = 0.0;                  //Current target width
+            size_t _gripper_history_size    = 0;                    //Counter how many of history is valid
+            size_t _gripper_history_pointer = 0;                    //Pointer to previous width
+            double _gripper_history[gripper_history_size];          //Previous widths (used for stuck detection. Yes, can be implemented more efficiently, but I keep things explicit)
             
             //Physical model
             std::unique_ptr<Model> _physical_model;

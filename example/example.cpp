@@ -7,7 +7,7 @@ int _main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        std::cout << "Usage: ./franka_emulator_example <IP>" << std::endl;
+        std::cerr << "Usage: ./franka_emulator_example <IP>" << std::endl;
         return 1;
     }
 
@@ -15,6 +15,7 @@ int _main(int argc, char **argv)
     {
         //Gripper example
         FRANKA_EMULATOR::Gripper gripper(argv[1]);
+        gripper.homing();
         gripper.move(0.1, 0.01);
         gripper.grasp(0.0, 0.01, 1.0);
 
@@ -40,7 +41,7 @@ int _main(int argc, char **argv)
     }
     catch (std::exception &e)
     {
-        std::cout << "Exception occured: " << e.what() << std::endl;
+        std::cerr << "Exception occured: " << e.what() << std::endl;
         return 1;
     }
     return 0;

@@ -15,7 +15,7 @@ if(FRANKA_EMULATOR_IMITATE)
   endif()
 
 else()
-  project(libfranka_emulator VERSION 1.0.0)
+  project(libfranka_emulator VERSION 1.0.1)
   set(FRANKA_EMULATOR_NAME_UPPERCASE FrankaEmulator)
   set(FRANKA_EMULATOR_NAME_LOWERCASE franka_emulator)
   if (EXISTS ${CMAKE_SOURCE_DIR}/include/franka)
