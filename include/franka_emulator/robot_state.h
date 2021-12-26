@@ -8,6 +8,55 @@
 #include "duration.h"
 #include "errors.h"
 
+/*
+std::array<double, 16> O_T_EE{};                //end effector pose, updated in every tact
+std::array<double, 16> O_T_EE_d{};              //ignored
+std::array<double, 16> F_T_EE{};                //end effector pose in flange frame, updated with setEE() (???)
+std::array<double, 16> F_T_NE{};                //nominal end effector pose in flange frame, set in configuration
+std::array<double, 16> NE_T_EE{};               //end effector pose in nominal end effector frame, updated with setEE() (???)
+std::array<double, 16> EE_T_K{};                //stiffness pose in end effector frame, updated with setK()
+double m_ee{};                                  //end effector mass, set in configuration
+std::array<double, 9> I_ee{};                   //end effector inertia, set in configuration
+std::array<double, 3> F_x_Cee{};                //end effector center of mass in flange frame, set in configuration
+double m_load{};                                //external load mass, updated with setLoad()
+std::array<double, 9> I_load{};                 //external load inertia, updated with setLoad()
+std::array<double, 3> F_x_Cload{};              //external load center of mass in flange frame, updated with setLoad()
+double m_total{};                               //end effector mass + external load mass, updated with setLoad()
+std::array<double, 9> I_total{};                //end effector inertia + external load inertia, updated with setLoad()
+std::array<double, 3> F_x_Ctotal{};             //end effector center of mass + external load center of mass in flange frame, updated with setLoad()
+std::array<double, 2> elbow{};                  //position of third joint + sign of position of forth joint, updated in every tact
+std::array<double, 2> elbow_d{};                //ignored
+std::array<double, 2> elbow_c{};                //ignored
+std::array<double, 2> delbow_c{};               //ignored
+std::array<double, 2> ddelbow_c{};              //ignored
+std::array<double, 7> tau_J{};                  //torque, updated in Robot::_control() in every tact
+std::array<double, 7> tau_J_d{};                //ignored
+std::array<double, 7> dtau_J{};                 //numeric derivative of torque, updated in every tact
+std::array<double, 7> q{};                      //joint positions, updated in every tact
+std::array<double, 7> q_d{};                    //ignored
+std::array<double, 7> dq{};                     //joint velocities, updated in every tact
+std::array<double, 7> dq_d{};                   //ignored
+std::array<double, 7> ddq_d{};                  //ignored
+std::array<double, 7> joint_contact{};          //ignored
+std::array<double, 6> cartesian_contact{};      //ignored
+std::array<double, 7> joint_collision{};        //ignored
+std::array<double, 6> cartesian_collision{};    //ignored
+std::array<double, 7> tau_ext_hat_filtered{};   //ignored
+std::array<double, 6> O_F_ext_hat_K{};          //ignored
+std::array<double, 6> K_F_ext_hat_K{};          //ignored
+std::array<double, 6> O_dP_EE_d{};              //ignored
+std::array<double, 16> O_T_EE_c{};              //ignored
+std::array<double, 6> O_dP_EE_c{};              //ignored
+std::array<double, 6> O_ddP_EE_c{};             //ignored
+std::array<double, 7> theta{};                  //ignored
+std::array<double, 7> dtheta{};                 //ignored
+Errors current_errors{};                        //ignored
+Errors last_motion_errors{};                    //ignored
+double control_command_success_rate{};          //success rate, set once
+RobotMode robot_mode = RobotMode::kUserStopped; //robot mode, set once
+Duration time{};                                //time, updated in every tact
+*/
+
 /**
  * @file robot_state.h
  * Contains the franka::RobotState types.
@@ -44,6 +93,8 @@ struct RobotState {
    * \f${^OT_{EE}}_{d}\f$
    * Last desired end effector pose of motion generation in base frame.
    * Pose is represented as a 4x4 matrix in column-major format.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 16> O_T_EE_d{};  // NOLINT(readability-identifier-naming)
 
@@ -161,6 +212,8 @@ struct RobotState {
    * The values of the array are:
    *  - [0] Position of the 3rd joint in [rad].
    *  - [1] Sign of the 4th joint. Can be +1 or -1.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 2> elbow_d{};
 
@@ -170,6 +223,8 @@ struct RobotState {
    * The values of the array are:
    *  - [0] Position of the 3rd joint in [rad].
    *  - [1] Sign of the 4th joint. Can be +1 or -1.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 2> elbow_c{};
 
@@ -179,6 +234,8 @@ struct RobotState {
    * The values of the array are:
    *  - [0] Velocity of the 3rd joint in [rad/s].
    *  - [1] Sign of the 4th joint. Can be +1 or -1.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 2> delbow_c{};
 
@@ -188,6 +245,8 @@ struct RobotState {
    * The values of the array are:
    *  - [0] Acceleration of the 3rd joint in [rad/s^2].
    *  - [1] Sign of the 4th joint. Can be +1 or -1.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 2> ddelbow_c{};
 
@@ -200,6 +259,8 @@ struct RobotState {
   /**
    * \f${\tau_J}_d\f$
    * Desired link-side joint torque sensor signals without gravity. Unit: \f$[Nm]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> tau_J_d{};  // NOLINT(readability-identifier-naming)
 
@@ -218,6 +279,8 @@ struct RobotState {
   /**
    * \f$q_d\f$
    * Desired joint position. Unit: \f$[rad]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> q_d{};
 
@@ -230,12 +293,16 @@ struct RobotState {
   /**
    * \f$\dot{q}_d\f$
    * Desired joint velocity. Unit: \f$[\frac{rad}{s}]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> dq_d{};
 
   /**
    * \f$\dot{q}_d\f$
    * Desired joint acceleration. Unit: \f$[\frac{rad}{s^2}]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> ddq_d{};
 
@@ -244,6 +311,8 @@ struct RobotState {
    * turns to zero.
    *
    * @see Robot::setCollisionBehavior for setting sensitivity values.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> joint_contact{};
 
@@ -252,6 +321,8 @@ struct RobotState {
    * After contact disappears, the value turns to zero.
    *
    * @see Robot::setCollisionBehavior for setting sensitivity values.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> cartesian_contact{};
 
@@ -261,6 +332,8 @@ struct RobotState {
    *
    * @see Robot::setCollisionBehavior for setting sensitivity values.
    * @see Robot::automaticErrorRecovery for performing a reset after a collision.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> joint_collision{};
 
@@ -270,12 +343,16 @@ struct RobotState {
    *
    * @see Robot::setCollisionBehavior for setting sensitivity values.
    * @see Robot::automaticErrorRecovery for performing a reset after a collision.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> cartesian_collision{};
 
   /**
    * \f$\hat{\tau}_{\text{ext}}\f$
    * External torque, filtered. Unit: \f$[Nm]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> tau_ext_hat_filtered{};
 
@@ -284,6 +361,8 @@ struct RobotState {
    * Estimated external wrench (force, torque) acting on stiffness frame, expressed
    * relative to the base frame. See also @ref k-frame "K frame".
    * Unit: \f$[N,N,N,Nm,Nm,Nm]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> O_F_ext_hat_K{};  // NOLINT(readability-identifier-naming)
 
@@ -292,6 +371,8 @@ struct RobotState {
    * Estimated external wrench (force, torque) acting on stiffness frame,
    * expressed relative to the stiffness frame. See also @ref k-frame "K frame".
    * Unit: \f$[N,N,N,Nm,Nm,Nm]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> K_F_ext_hat_K{};  // NOLINT(readability-identifier-naming)
 
@@ -299,6 +380,8 @@ struct RobotState {
    * \f${^OdP_{EE}}_{d}\f$
    * Desired end effector twist in base frame.
    * Unit: \f$[\frac{m}{s},\frac{m}{s},\frac{m}{s},\frac{rad}{s},\frac{rad}{s},\frac{rad}{s}]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> O_dP_EE_d{};  // NOLINT(readability-identifier-naming)
 
@@ -306,6 +389,8 @@ struct RobotState {
    * \f${^OT_{EE}}_{c}\f$
    * Last commanded end effector pose of motion generation in base frame.
    * Pose is represented as a 4x4 matrix in column-major format.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 16> O_T_EE_c{};  // NOLINT(readability-identifier-naming)
 
@@ -313,6 +398,8 @@ struct RobotState {
    * \f${^OdP_{EE}}_{c}\f$
    * Last commanded end effector twist in base frame.
    * Unit: \f$[\frac{m}{s},\frac{m}{s},\frac{m}{s},\frac{rad}{s},\frac{rad}{s},\frac{rad}{s}]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> O_dP_EE_c{};  // NOLINT(readability-identifier-naming)
 
@@ -321,28 +408,38 @@ struct RobotState {
    * Last commanded end effector acceleration in base frame.
    * Unit:
    * \f$[\frac{m}{s^2},\frac{m}{s^2},\frac{m}{s^2},\frac{rad}{s^2},\frac{rad}{s^2},\frac{rad}{s^2}]\f$.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 6> O_ddP_EE_c{};  // NOLINT(readability-identifier-naming)
 
   /**
    * \f$\theta\f$
    * Motor position. Unit: \f$[rad]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> theta{};
 
   /**
    * \f$\dot{\theta}\f$
    * Motor velocity. Unit: \f$[rad]\f$
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   std::array<double, 7> dtheta{};
 
   /**
    * Current error state.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   Errors current_errors{};
 
   /**
    * Contains the errors that aborted the previous motion.
+   * 
+   * @attention **[Emulator]** The attribute is ignored
    */
   Errors last_motion_errors{};
 
@@ -357,6 +454,8 @@ struct RobotState {
 
   /**
    * Current robot mode.
+   * 
+   * @attention **[Emulator]** `root_mode` is always kMove
    */
   RobotMode robot_mode = RobotMode::kUserStopped;
 

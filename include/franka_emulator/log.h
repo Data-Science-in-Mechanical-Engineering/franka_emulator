@@ -65,6 +65,8 @@ struct Record {
  * @param[in] log Log provided by the ControlException.
  *
  * @return a string in CSV format, or empty string.
+ * 
+ * @attention **[Emulator]** `log` is ignored, the function returns empty string
  */
 std::string logToCSV(const std::vector<Record>& log);
 }  // namespace FRANKA_EMULATOR

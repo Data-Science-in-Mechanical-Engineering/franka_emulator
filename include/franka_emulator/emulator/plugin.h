@@ -22,6 +22,7 @@ namespace FRANKA_EMULATOR
                 controlling
             };
             RobotState _robot_state = RobotState::idle;
+            double _robot_previous_torque[7] = {0,0,0,0,0,0,0};
 
             //Gripper logic
             enum class GripperState
@@ -51,7 +52,9 @@ namespace FRANKA_EMULATOR
             gazebo::physics::JointPtr _fingers[2];
             gazebo::event::ConnectionPtr _connection;
             void _set_default_position();
+            void _init_robot_state();
             void _fill_robot_state(const gazebo::common::Time &time);
+            void _init_gripper_state();
             void _fill_gripper_state(const gazebo::common::Time &time);
             void _process_robot_request(const gazebo::common::Time &time);
             void _process_gripper_request(const gazebo::common::Time &time);

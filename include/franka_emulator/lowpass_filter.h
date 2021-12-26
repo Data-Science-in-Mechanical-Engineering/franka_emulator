@@ -33,6 +33,8 @@ constexpr double kDefaultCutoffFrequency = 100.0;
  * @throw std::invalid_argument if sample_time is negative, infinite or NaN.
  *
  * @return Filtered value.
+ * 
+ * @attention **[Emulator]** The function has no effect
  */
 double lowpassFilter(double sample_time, double y, double y_last, double cutoff_frequency);
 
@@ -51,6 +53,8 @@ double lowpassFilter(double sample_time, double y, double y_last, double cutoff_
  * @throw std::invalid_argument if sample_time is negative, infinite or NaN.
  *
  * @return Filtered Cartesian transformation matrix.
+ * 
+ * @attention **[Emulator]** The function has no effect
  */
 
 std::array<double, 16> cartesianLowpassFilter(double sample_time,

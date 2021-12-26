@@ -72,7 +72,6 @@ bool FRANKA_EMULATOR::Gripper::grasp(double width,
         _shared.data()->gripper_request.force = force;
         _shared.data()->gripper_request.epsilon_inner = epsilon_inner;
         _shared.data()->gripper_request.epsilon_outer = epsilon_outer;
-
         _request_condition.limitedpost(1);
     }
 

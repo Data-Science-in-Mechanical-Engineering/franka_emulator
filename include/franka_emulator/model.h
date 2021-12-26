@@ -2,7 +2,6 @@
 // Use of this source code is governed by the Apache-2.0 license, see LICENSE
 #pragma once
 
-#include "robot.h"
 #include "robot_state.h"
 
 #include <pinocchio/multibody/model.hpp>
@@ -200,6 +199,8 @@ class Model {
    * Unit: \f$[m]\f$.
    *
    * @return Vectorized 7x7 mass matrix, column-major.
+   * 
+   * @attention **[Emulator]** `F_x_Ctotal` is ignored
    */
   std::array<double, 49> mass(
       const std::array<double, 7>& q,
@@ -232,6 +233,8 @@ class Model {
    * Unit: \f$[m]\f$.
    *
    * @return Coriolis force vector.
+   * 
+   * @attention **[Emulator]** `F_x_Ctotal` is ignored
    */
   std::array<double, 7> coriolis(
       const std::array<double, 7>& q,
@@ -253,6 +256,8 @@ class Model {
    * Default to {0.0, 0.0, -9.81}.
    *
    * @return Gravity vector.
+   * 
+   * @attention **[Emulator]** `F_x_Ctotal` is ignored
    */
   std::array<double, 7> gravity(
       const std::array<double, 7>& q,

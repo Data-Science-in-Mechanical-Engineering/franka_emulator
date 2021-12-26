@@ -16,7 +16,7 @@ int _main(int argc, char **argv)
         //Gripper example
         FRANKA_EMULATOR::Gripper gripper(argv[1]);
         gripper.move(0.1, 0.01);
-        gripper.move(0.0, 0.01);
+        gripper.grasp(0.0, 0.01, 1.0);
 
         //Robot example
         FRANKA_EMULATOR::Robot robot(argv[1]);

@@ -76,6 +76,8 @@ struct ControlException : public Exception {
    *
    * @param[in] what Explanatory string.
    * @param[in] log Vector of last received states and commands.
+   * 
+   * @attention **[Emulator]** `log` is ignored
    */
   explicit ControlException(const std::string& what, std::vector<FRANKA_EMULATOR::Record> log = {}) noexcept;
 

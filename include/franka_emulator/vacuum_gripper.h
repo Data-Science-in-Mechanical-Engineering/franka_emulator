@@ -24,6 +24,8 @@ class Network;
  *
  * @note
  * The members of this class are threadsafe.
+ * 
+ * @attention **[Emulator]** The class is not implemented
  */
 class VacuumGripper {
  public:

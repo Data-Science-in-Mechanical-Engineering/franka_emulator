@@ -116,6 +116,8 @@ constexpr double kMaxElbowVelocity =
  * @throw std::invalid_argument if commanded_values are infinite or NaN.
  *
  * @return Rate-limited vector of desired values.
+ * 
+ * @attention **[Emulator]** The function returns zero array
  */
 std::array<double, 7> limitRate(const std::array<double, 7>& max_derivatives,
                                 const std::array<double, 7>& commanded_values,
@@ -137,6 +139,8 @@ std::array<double, 7> limitRate(const std::array<double, 7>& max_derivatives,
  * @throw std::invalid_argument if commanded_velocity is infinite or NaN.
  *
  * @return Rate-limited desired joint velocity.
+ * 
+ * @attention **[Emulator]** The function returns zero
  */
 double limitRate(double max_velocity,
                  double max_acceleration,
@@ -162,6 +166,8 @@ double limitRate(double max_velocity,
  * @throw std::invalid_argument if commanded_position is infinite or NaN.
  *
  * @return Rate-limited desired joint position.
+ * 
+ * @attention **[Emulator]** The function returns zero
  */
 double limitRate(double max_velocity,
                  double max_acceleration,
@@ -187,6 +193,8 @@ double limitRate(double max_velocity,
  * @throw std::invalid_argument if commanded_velocities are infinite or NaN.
  *
  * @return Rate-limited vector of desired joint velocities.
+ * 
+ * @attention **[Emulator]** The function returns zero array
  */
 std::array<double, 7> limitRate(const std::array<double, 7>& max_velocity,
                                 const std::array<double, 7>& max_acceleration,
@@ -212,6 +220,8 @@ std::array<double, 7> limitRate(const std::array<double, 7>& max_velocity,
  * @throw std::invalid_argument if commanded_positions are infinite or NaN.
  *
  * @return Rate-limited vector of desired joint positions.
+ * 
+ * @attention **[Emulator]** The function returns zero array
  */
 std::array<double, 7> limitRate(const std::array<double, 7>& max_velocity,
                                 const std::array<double, 7>& max_acceleration,
@@ -240,6 +250,8 @@ std::array<double, 7> limitRate(const std::array<double, 7>& max_velocity,
  * @throw std::invalid_argument if an element of O_dP_EE_c is infinite or NaN.
  *
  * @return Rate-limited desired end effector twist.
+ * 
+ * @attention **[Emulator]** The function returns zero array
  */
 std::array<double, 6> limitRate(
     double max_translational_velocity,
@@ -272,6 +284,8 @@ std::array<double, 6> limitRate(
  * @throw std::invalid_argument if an element of O_T_EE_c is infinite or NaN.
  *
  * @return Rate-limited desired pose.
+ * 
+ * @attention **[Emulator]** The function returns zero array
  */
 std::array<double, 16> limitRate(
     double max_translational_velocity,

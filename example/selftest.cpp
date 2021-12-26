@@ -476,7 +476,7 @@ int main(int argc, char **argv)
     emulator_model = new FRANKA_EMULATOR::Model(emulator_network);
     emulator_state.m_total = FRANKA_EMULATOR::emulator::gripper_mass;
     emulator_state.I_total = FRANKA_EMULATOR::emulator::gripper_inertia;
-    emulator_state.F_T_EE = FRANKA_EMULATOR::emulator::gripper_frame;
-    emulator_state.EE_T_K = FRANKA_EMULATOR::emulator::stiffness_frame;
+    emulator_state.F_T_EE = FRANKA_EMULATOR::emulator::nominal_gripper_frame;
+    emulator_state.EE_T_K = std::array<double, 16>({ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 });
     return RUN_ALL_TESTS();
 }
